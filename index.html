@@ -98,6 +98,38 @@ input[type=file]{display:none}
 .play svg{width:24px;height:24px}
 .tools .iconbtn{background:var(--dusk);box-shadow:none;color:#fff}
 
+/* ---------- KURS: UTWÓR PODZIELONY NA CZĘŚCI ---------- */
+#course{position:fixed;inset:0;background:var(--night);color:#fff;overflow-y:auto;padding:0 0 calc(30px + var(--safe-b))}
+#course .pbar{position:sticky;top:0;z-index:2}
+.cwrap{max-width:720px;margin:0 auto;padding:16px}
+.chead{display:flex;align-items:center;gap:14px;margin:6px 0 16px}
+.ring{width:64px;height:64px;flex:none}
+.chead h2{font-family:var(--disp);font-weight:600;font-size:22px;margin:0;line-height:1.15}
+.chead p{margin:4px 0 0;color:#B9B6E8;font-size:14px}
+.nextbox{background:linear-gradient(135deg,#2E2A6B,#3A2F7A);border-radius:22px;padding:16px;margin-bottom:22px;display:flex;align-items:center;gap:14px}
+.nextbox .em{font-size:34px;width:56px;height:56px;border-radius:18px;background:rgba(255,255,255,.08);display:grid;place-items:center;flex:none}
+.nextbox .t{flex:1;min-width:0}
+.nextbox small{color:#B9B6E8;font-size:13px;font-weight:700}
+.nextbox b{display:block;font-family:var(--disp);font-weight:600;font-size:19px;margin-top:2px}
+.nextbox span{display:block;color:#D6D4F5;font-size:13px;margin-top:3px;line-height:1.35}
+.part{background:var(--dusk);border-radius:20px;padding:14px;margin-bottom:12px}
+.part.lock{opacity:.55}
+.part h4{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--disp);font-weight:600;font-size:17px;margin:0 0 10px}
+.part h4 small{font-family:var(--body);color:#B9B6E8;font-size:13px;font-weight:600}
+.steps{display:flex;flex-wrap:wrap;gap:8px}
+.step{display:flex;flex-direction:column;align-items:center;gap:3px;width:76px;padding:8px 2px 6px;border-radius:16px;background:rgba(255,255,255,.05);font-size:11.5px;font-weight:700;color:#D6D4F5;line-height:1.15;text-align:center}
+.step .e{font-size:22px;line-height:1}
+.step .st{font-size:11px;letter-spacing:1px;color:var(--sun)} .step .st i{color:#4D4A86;font-style:normal}
+.step.done{background:rgba(47,224,168,.12)}
+.step.cur{background:var(--sun);color:var(--ink);box-shadow:0 0 0 3px rgba(255,200,69,.35)}
+.step.cur .st i{color:rgba(29,27,69,.35)}
+.step.lock{opacity:.45}
+.joinrow{display:flex;justify-content:center;margin:-2px 0 12px}
+.joinrow .step{flex-direction:row;width:auto;padding:8px 14px;gap:8px}
+.free{background:var(--dusk);color:#fff;box-shadow:none}
+.free:active{box-shadow:none}
+.stepbanner{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:rgba(14,12,38,.82);color:#fff;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;white-space:nowrap;pointer-events:none;z-index:3;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+
 /* ---------- ARKUSZ USTAWIEŃ ---------- */
 .sheetbg{position:fixed;inset:0;background:rgba(10,9,30,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:#fff;color:var(--ink);width:100%;max-width:560px;border-radius:26px 26px 0 0;padding:10px 20px calc(22px + var(--safe-b));max-height:86%;overflow-y:auto;animation:up .22s ease-out}
@@ -202,6 +234,20 @@ input[type=range]{accent-color:var(--azure);width:150px}
  <input id="fileIn" type="file" accept=".mid,.midi,.xml,.musicxml,.mxl">
 </main>
 
+<!-- ================= KURS (CZĘŚCI UTWORU) ================= -->
+<section id="course" class="hidden">
+  <div class="pbar">
+    <button class="iconbtn" id="cBack" aria-label="Wróć do biblioteki"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="ptitle"><b id="cTitle">Utwór</b></div>
+    <button class="btn free" id="cFree">Graj swobodnie</button>
+  </div>
+  <div class="cwrap">
+    <div class="chead"><canvas class="ring" id="cRing" width="128" height="128"></canvas><div><h2 id="cHead"></h2><p id="cSub"></p></div></div>
+    <div class="nextbox" id="cNext"></div>
+    <div id="cParts"></div>
+  </div>
+</section>
+
 <!-- ================= EKRAN ĆWICZENIA ================= -->
 <section id="practice" class="hidden">
   <div class="pbar">
@@ -214,7 +260,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
     </div>
     <button class="iconbtn" id="gearBtn" aria-label="Ustawienia"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
   </div>
-  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="stage"><canvas id="cv"></canvas><div class="stepbanner hidden" id="stepBanner"></div></div>
   <div class="tools">
     <span class="seg hands" id="handSeg"><button data-v="L">Lewa</button><button data-v="B" class="on">Obie</button><button data-v="R">Prawa</button></span>
     <span class="seg" id="viewSeg"><button data-v="staff">Nuty</button><button data-v="roll">Pasy</button></span>
@@ -253,7 +299,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
   <h2 id="resTitle">Brawo!</h2>
   <p id="resTip"></p>
   <div class="stats"><div><b id="resAcc">0%</b>dokładność</div><div><b id="resHits">0</b>nuty</div><div><b id="resWrong">0</b>błędy</div><div><b id="resTempo">0%</b>tempo</div></div>
-  <div class="btns"><button class="btn ghost" id="resClose">Zamknij</button><button class="btn" id="resAgain">Jeszcze raz</button></div>
+  <div class="btns"><button class="btn ghost" id="resClose">Zamknij</button><button class="btn ghost" id="resAgain">Jeszcze raz</button><button class="btn hidden" id="resNext">Dalej</button></div>
 </div></div>
 
 <!-- ================= ZE SŁUCHU ================= -->
@@ -670,6 +716,91 @@ function reset(){
 }
 
 
+/* ===================== KURS: KROK PO KROKU ===================== */
+// Utwór dzielimy na krótkie części (1–4 takty, ok. 14 nut). Każdą część uczymy się w krokach:
+// posłuchaj → prawa → lewa → obie wolno → w rytmie → z pamięci; potem łączymy ją z poprzednią.
+let courseStep=null, memo=false, memoEv=-1, memoAt=0, memoReveal=false;
+const STEPDEF={
+  listen:{e:'👂',n:'Posłuchaj',mode:'listen',hands:'B',sp:0.8,d:'Posłuchaj, jak brzmi ta część i popatrz na palce.'},
+  R:{e:'🫱',n:'Prawa ręka',mode:'wait',hands:'R',sp:0.6,d:'Graj prawą ręką. Aplikacja czeka na każdą nutę.'},
+  L:{e:'🫲',n:'Lewa ręka',mode:'wait',hands:'L',sp:0.6,d:'Graj lewą ręką. Aplikacja czeka na każdą nutę.'},
+  B:{e:'🙌',n:'Obie ręce',mode:'wait',hands:'B',sp:0.6,d:'Teraz obie ręce razem, bez pośpiechu.'},
+  T:{e:'⏱️',n:'W rytmie',mode:'tempo',hands:'B',sp:0.75,d:'Obie ręce w rytmie. Nuty płyną same.'},
+  M:{e:'🧠',n:'Z pamięci',mode:'wait',hands:'B',sp:0.8,memo:true,d:'Nuty są ukryte. Graj z pamięci, podpowiedź pojawi się po 4 sekundach.'},
+  J:{e:'🔗',n:'Połącz',mode:'tempo',hands:'B',sp:0.75,d:'Połącz tę część z poprzednią, w rytmie.'},
+  F:{e:'🏆',n:'Cały utwór',mode:'tempo',hands:'B',sp:0.85,d:'Zagraj cały utwór od początku do końca.'}
+};
+function makeSections(sg){
+  const nb=Math.max(1,sg.bars.length-1), cnt=new Array(nb).fill(0);
+  for(const n of sg.notes){ let i=0; while(i<nb-1&&n.s>=sg.bars[i+1]-0.01) i++; cnt[i]++; }
+  const secs=[]; let a=0, c=0;
+  for(let i=0;i<nb;i++){ c+=cnt[i]; const len=i-a+1;
+    if(c===0){ a=i+1; continue; }                        // puste takty na początku – pomijamy
+    if(c>=14||len>=4||(len>=2&&c>=10)){ secs.push([a,i,c]); a=i+1; c=0; } }
+  if(c>0){ if(secs.length&&c<6) { const l=secs[secs.length-1]; l[1]=nb-1; l[2]+=c; } else secs.push([a,nb-1,c]); }
+  if(!secs.length) secs.push([0,nb-1,sg.notes.length]);
+  return secs.map(([b0,b1,n])=>({b0,b1,n}));
+}
+function courseOf(sg){
+  if(sg._course) return sg._course;
+  const secs=makeSections(sg), steps=[];
+  const has=(sec,h)=>sg.notes.some(n=>n.h===h&&n.s>=sg.bars[sec.b0]-0.01&&n.s<(sg.bars[sec.b1+1]??sg.duration+1)-0.01);
+  secs.forEach((sec,k)=>{
+    for(const t of ['listen','R','L','B','T','M']){ if((t==='R'||t==='L')&&!has(sec,t)) continue; if(t==='B'&&!(has(sec,'R')&&has(sec,'L'))) continue;
+      steps.push({id:'s'+k+t,t,sec:k,b0:sec.b0,b1:sec.b1}); }
+    if(k>=1) steps.push({id:'j'+k,t:'J',sec:k,join:true,b0:secs[k-1].b0,b1:sec.b1});
+  });
+  if(secs.length>1) steps.push({id:'full',t:'F',sec:secs.length,b0:0,b1:secs[secs.length-1].b1});
+  return sg._course={secs,steps};
+}
+function courseStars(){ return (LS.get('kfp_course',{})[songTitle])||{}; }
+function saveStepStars(id,k){ const all=LS.get('kfp_course',{}); const m=all[songTitle]||(all[songTitle]={}); if(k>(m[id]||0)){ m[id]=k; LS.set('kfp_course',all); } }
+function stepLabel(st,secs){ const D=STEPDEF[st.t]; if(st.t==='J') return 'Połącz części '+st.sec+'–'+(st.sec+1); if(st.t==='F') return 'Cały utwór'; return 'Część '+(st.sec+1)+' · '+D.n; }
+function barsTxt(b0,b1){ return b0===b1?'takt '+(b0+1):'takty '+(b0+1)+'–'+(b1+1); }
+function nextStepIdx(){ const C=courseOf(song), S=courseStars(); const i=C.steps.findIndex(s=>!(S[s.id]>=1)); return i<0?C.steps.length-1:i; }
+function renderCourse(){
+  const C=courseOf(song), S=courseStars(), ni=nextStepIdx(), done=C.steps.filter(s=>S[s.id]>=1).length;
+  $('cTitle').textContent=songTitle;
+  $('cHead').textContent=done>=C.steps.length?'Utwór opanowany! 🎉':C.secs.length+' '+(C.secs.length===1?'część':C.secs.length%10>=2&&C.secs.length%10<=4&&(C.secs.length%100<10||C.secs.length%100>20)?'części':'części')+', krok po kroku';
+  $('cSub').textContent='Ukończone kroki: '+done+' z '+C.steps.length+'. Każdą część uczysz się osobno, potem łączysz z poprzednią.';
+  // pierścień postępu
+  const rc=$('cRing'), x=rc.getContext('2d'), p=done/C.steps.length; x.clearRect(0,0,128,128); x.lineWidth=12; x.lineCap='round';
+  x.strokeStyle='#2E2A6B'; x.beginPath(); x.arc(64,64,52,0,7); x.stroke();
+  if(p>0){ const g=x.createLinearGradient(0,0,128,128); g.addColorStop(0,'#2FE0A8'); g.addColorStop(1,'#4F8CFF'); x.strokeStyle=g; x.beginPath(); x.arc(64,64,52,-Math.PI/2,-Math.PI/2+p*Math.PI*2); x.stroke(); }
+  x.fillStyle='#fff'; x.font='600 30px '+FONT; x.textAlign='center'; x.textBaseline='middle'; x.fillText(Math.round(p*100)+'%',64,66);
+  const nx=C.steps[ni], D=STEPDEF[nx.t];
+  $('cNext').innerHTML='<div class="em">'+D.e+'</div><div class="t"><small>'+(done?'Następny krok':'Zacznij tutaj')+'</small><b>'+esc(stepLabel(nx))+'</b><span>'+esc(barsTxt(nx.b0,nx.b1))+'. '+D.d+'</span></div><button class="btn" id="cGo">Graj</button>';
+  $('cGo').onclick=()=>startStep(ni);
+  const box=$('cParts'); box.innerHTML='';
+  const stHTML=k=>'<span class="st">'+'★'.repeat(k)+'<i>'+'★'.repeat(3-k)+'</i></span>';
+  const chip=(st,i)=>{ const b=document.createElement('button'); const k=S[st.id]||0, lock=i>ni; b.className='step'+(k>=1?' done':'')+(i===ni?' cur':'')+(lock?' lock':'');
+    b.innerHTML='<span class="e">'+(lock?'🔒':STEPDEF[st.t].e)+'</span>'+(st.t==='J'?esc(stepLabel(st)):STEPDEF[st.t].n)+stHTML(k);
+    b.onclick=()=>{ if(lock){ toast('Najpierw ukończ wcześniejsze kroki'); return; } startStep(i); }; return b; };
+  C.secs.forEach((sec,k)=>{
+    const d=document.createElement('div'); const first=C.steps.findIndex(s=>s.sec===k&&!s.join);
+    d.className='part'+(first>ni?' lock':''); d.innerHTML='<h4>Część '+(k+1)+'<small>'+barsTxt(sec.b0,sec.b1)+', '+sec.n+' nut</small></h4><div class="steps"></div>';
+    C.steps.forEach((st,i)=>{ if(st.sec===k&&!st.join&&st.t!=='F') d.querySelector('.steps').appendChild(chip(st,i)); });
+    box.appendChild(d);
+    const ji=C.steps.findIndex(s=>s.join&&s.sec===k+1); if(ji>=0){ const r=document.createElement('div'); r.className='joinrow'; r.appendChild(chip(C.steps[ji],ji)); box.appendChild(r); }
+  });
+  const fi=C.steps.findIndex(s=>s.t==='F'); if(fi>=0){ const r=document.createElement('div'); r.className='joinrow'; r.appendChild(chip(C.steps[fi],fi)); box.appendChild(r); }
+}
+function setSeg(id,v){ $(id).querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); }
+function startStep(i){
+  const C=courseOf(song), st=C.steps[i], D=STEPDEF[st.t];
+  courseStep={i,id:st.id};
+  hands=D.hands; mode=D.mode; memo=!!D.memo; setSeg('handSeg',hands); setSeg('modeSeg',mode);
+  speed=targetSpeed=D.sp; syncSpeedUI(); $('loop').checked=false;
+  $('fromBar').value=st.b0+1; $('toBar').value=st.b1+1;
+  $('course').classList.add('hidden'); $('practice').classList.remove('hidden'); resize(); reset();
+  $('stepBanner').textContent=D.e+' '+stepLabel(st)+' · '+barsTxt(st.b0,st.b1); $('stepBanner').classList.remove('hidden');
+  toast(D.d);
+}
+function showCourse(){ playing=false; updatePlayBtn(); courseStep=null; memo=false; $('stepBanner').classList.add('hidden');
+  $('practice').classList.add('hidden'); $('home').classList.add('hidden'); $('course').classList.remove('hidden'); renderCourse(); $('course').scrollTop=0; }
+function freePlay(){ courseStep=null; memo=false; $('stepBanner').classList.add('hidden'); hands='B'; mode='wait'; setSeg('handSeg','B'); setSeg('modeSeg','wait');
+  $('course').classList.add('hidden'); $('practice').classList.remove('hidden'); resize(); setupSong(); syncSpeedUI(); }
+
 /* ===================== OCENA ===================== */
 function noteOn(m,src,when){
   pressedVisual.set(m,{t:performance.now(),ok:null});
@@ -677,6 +808,7 @@ function noteOn(m,src,when){
   if(!playing||mode==='listen'||countIn) return;
   const hit=judge(m,src,when);
   pressedVisual.set(m,{t:performance.now(),ok:hit});
+  if(!hit&&memo) memoReveal=true;
   if(!hit&&src!=='mic'){ stats.wrong++; stats.streak=0; if(events[evIdx]) events[evIdx].clean=false; recent.push(0); adapt(); }
 }
 function judge(m,src,when){
@@ -708,13 +840,14 @@ function syncSpeedUI(){ $('speed').value=Math.round(speed*100); $('speedV').text
 
 function finish(){
   playing=false; updatePlayBtn();
-  if(mode==='listen'){ reset(); return; }
+  if(mode==='listen'){ if(courseStep){ saveStepStars(courseStep.id,3); courseResult(3,100); } else reset(); return; }
   const total=pnotes.length||1;
   let acc;
   if(mode==='wait') acc=stats.hits/Math.max(1,stats.hits+stats.wrong);
   else acc=(stats.perfect+0.75*stats.good)/total;
   const pct=Math.round(acc*100), stars=pct>=90?3:pct>=75?2:pct>=50?1:0;
-  if($('loop').checked){ toast((stars?'★'.repeat(stars):'')+' '+pct+'% – jeszcze raz!'); const sp=speed; reset(); speed=sp; playing=true; updatePlayBtn(); return; }
+  if(courseStep){ saveStepStars(courseStep.id,stars); }
+  if($('loop').checked&&!courseStep){ toast((stars?'★'.repeat(stars):'')+' '+pct+'% – jeszcze raz!'); const sp=speed; reset(); speed=sp; playing=true; updatePlayBtn(); return; }
   $('resTitle').textContent=stars===3?'Znakomicie!':stars===2?'Bardzo dobrze!':stars===1?'Coraz lepiej':'Spróbujmy wolniej';
   renderStars(stars);
   $('resAcc').textContent=pct+'%'; $('resHits').textContent=stats.hits+'/'+total; $('resWrong').textContent=mode==='wait'?stats.wrong:stats.miss+stats.wrong; $('resTempo').textContent=Math.round(speed*100)+'%';
@@ -725,7 +858,19 @@ function finish(){
   else if(stars>=1) tip='Powtórz ten fragment 2–3 razy w tym samym tempie.';
   else tip='Zwolnij do 50% albo ćwicz każdą rękę osobno, po 2 takty.';
   $('resTip').textContent=tip;
-  if(saveBest(songTitle,pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
+  if(!courseStep&&saveBest(songTitle,pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
+  if(courseStep){ courseResult(stars,pct); return; }
+  $('resNext').classList.add('hidden'); $('resClose').textContent='Zamknij';
+  showModal('resModal');
+}
+
+function courseResult(stars,pct){
+  const C=courseOf(song), i=courseStep.i, nx=C.steps[i+1];
+  if(mode==='listen'){ $('resTitle').textContent='Posłuchane!'; renderStars(3); $('resAcc').textContent='–'; $('resHits').textContent='–'; $('resWrong').textContent='–'; $('resTempo').textContent=Math.round(speed*100)+'%'; }
+  const ok=stars>=1;
+  $('resTip').textContent=!nx&&ok?'To był ostatni krok. Cały utwór opanowany!':ok?(stars<3?'Zaliczone! Możesz powtórzyć, żeby mieć 3 gwiazdki, albo iść dalej.':'Świetnie, idziemy dalej.'):'Żeby przejść dalej, potrzebujesz co najmniej 50%. Zagraj jeszcze raz, spokojnie.';
+  $('resNext').classList.toggle('hidden',!ok||!nx); if(nx) $('resNext').textContent='Dalej: '+(nx.t==='J'?'Połącz':STEPDEF[nx.t].n)+' →';
+  $('resClose').textContent='Lista kroków';
   showModal('resModal');
 }
 
@@ -783,6 +928,9 @@ let viewMode=(()=>{try{return JSON.parse(localStorage.getItem('kfp_view'))||'sta
 function draw(now){
   const g=geometry();
   const ev=events[evIdx], fOn=$('fingers').checked, nOn=$('names').checked;
+  if(evIdx!==memoEv){ memoEv=evIdx; memoAt=now; memoReveal=false; }
+  const hideNow=memo&&playing&&!countIn&&!memoReveal&&now-memoAt<4000;   // tryb „z pamięci”: podpowiedź dopiero po 4 s albo po błędzie
+  draw.hide=(pn)=>memo&&pn&&pn.st===0&&(hideNow||!(ev&&ev.notes.includes(pn)));
   if(viewMode==='staff'){ drawStaff(now,ev,fOn,nOn); } else {
   // tło
   const bg=ctx.createLinearGradient(0,0,0,kbTop); bg.addColorStop(0,'#141236'); bg.addColorStop(1,'#25205A');
@@ -798,6 +946,7 @@ function draw(now){
     const pn=prac?pmap.get(n)||null:null, c=HC[n.h];
     const x=g.x[n.m]+(isBlack(n.m)?1:2), w=g.w[n.m]-(isBlack(n.m)?2:4), h=Math.max(8,y1-Math.max(y0,-20)), top=y1-h, rad=Math.min(9,w/2.2);
     if(!prac){ ctx.fillStyle=c.dim; rr(x,top,w,h,rad); ctx.fill(); continue; }
+    if(draw.hide(pn)) continue;
     if(pn&&pn.st===1){ ctx.globalAlpha=0.28; }
     let gr=ctx.createLinearGradient(0,top,0,y1); gr.addColorStop(0,c.a); gr.addColorStop(1,c.b);
     if(pn&&pn.st===2){ gr='rgba(255,107,122,.55)'; }
@@ -820,6 +969,7 @@ function draw(now){
   if(mode==='wait'&&ev) ev.notes.forEach(n=>{ if(n.st===0){ expect.set(n.m,n.h); if(n.f) fingerNow[n.h].set(n.f,n.m); } });
   if(mode==='wait'){ for(const n of song.notes){ if(n.s>songTime+0.3*speed) break; if(!isPractice(n.h)&&n.f&&n.s<=songTime+0.05&&n.s+n.d>songTime) fingerNow[n.h].set(n.f,n.m); } }
   if(mode!=='wait') for(const n of song.notes){ if(n.s<=songTime+0.12*speed&&n.s+n.d>songTime){ expect.set(n.m,n.h); if(n.f) fingerNow[n.h].set(n.f,n.m); } if(n.s>songTime+0.12*speed) break; }
+  if(hideNow){ expect.clear(); fingerNow.R.clear(); fingerNow.L.clear(); }
   const keyFinger=new Map(); for(const h of ['R','L']) for(const [f,m] of fingerNow[h]) keyFinger.set(m,f);
   const pv=m=>{const p=pressedVisual.get(m); if(!p) return null; if(!held.has(m)&&now-p.t>220){pressedVisual.delete(m); return null;} return p;};
   const keyFill=(m,black,y,h)=>{ const p=pv(m); let a,b;
@@ -897,6 +1047,7 @@ function drawStaff(now,ev,fOn,nOn){
     if(g0&&Math.abs(n.s-g0.t)<0.035) g0.notes.push(n); else { const g={x,t:n.s,st,notes:[n]}; groups.push(g); lastG[st]=g; } }
   const rx=sp*0.72, ry=sp*0.52;
   for(const gp of groups){
+    if(memo){ gp.notes=gp.notes.filter(n=>!draw.hide(pmap.get(n))); if(!gp.notes.length) continue; }
     const {x,st}=gp;
     const items=gp.notes.map(n=>({n,d:dnOf(n.m),y:yOf(n.m,st),dx:0})).sort((a,b)=>a.d-b.d);
     const yMin=Math.min(...items.map(o=>o.y)), yMax=Math.max(...items.map(o=>o.y));
@@ -1378,10 +1529,11 @@ function renderHome(){
 }
 function openSong(i){
   const l=library[i]; song=l.song; songTitle=l.title; LS.set('kfp_last',l.title);
-  $('pTitle').textContent=l.title; $('home').classList.add('hidden'); $('practice').classList.remove('hidden');
-  resize(); setupSong(); syncSpeedUI();
+  $('pTitle').textContent=l.title;
+  if(!song.fingered){ assignFingering(song); song.fingered=true; }
+  setupSong(); syncSpeedUI(); showCourse();
 }
-function goHome(){ playing=false; updatePlayBtn(); $('practice').classList.add('hidden'); $('home').classList.remove('hidden'); renderHome(); }
+function goHome(){ playing=false; updatePlayBtn(); courseStep=null; memo=false; $('practice').classList.add('hidden'); $('course').classList.add('hidden'); $('home').classList.remove('hidden'); renderHome(); }
 
 /* ===================== UI ===================== */
 function updatePlayBtn(){ $('playIc').innerHTML=playing?'<rect x="6" y="5" width="4.5" height="14" rx="1.5" fill="currentColor"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.5" fill="currentColor"/>':'<path fill="currentColor" d="M7 4.5v15l13-7.5z"/>'; $('playBtn').setAttribute('aria-label',playing?'Pauza':'Start'); }
@@ -1405,8 +1557,9 @@ $('fileIn').onchange=async e=>{
   }catch(err){ toast('Nie mogę otworzyć pliku: '+err.message); console.error(err); }
 };
 function seg(id,cb){ $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{ $(id).querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(b.dataset.v); }); }
-seg('handSeg',v=>{hands=v; reset();});
-seg('modeSeg',v=>{mode=v; reset();});
+seg('handSeg',v=>{hands=v; leaveStep(); reset();});
+seg('modeSeg',v=>{mode=v; leaveStep(); reset();});
+function leaveStep(){ if(courseStep){ courseStep=null; memo=false; $('stepBanner').classList.add('hidden'); toast('Tryb swobodny'); } }
 seg('viewSeg',v=>{viewMode=v; LS.set('kfp_view',v);});
 $('viewSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===viewMode));
 $('speed').oninput=e=>{ speed=targetSpeed=+e.target.value/100; syncSpeedUI(); };
@@ -1419,13 +1572,15 @@ function togglePlay(){ if($('practice').classList.contains('hidden')) return; au
   playing=!playing; updatePlayBtn(); }
 $('playBtn').onclick=togglePlay;
 $('restartBtn').onclick=()=>{ speed=targetSpeed; syncSpeedUI(); reset(); };
-$('backBtn').onclick=goHome;
+$('backBtn').onclick=()=>{ if(courseStep) showCourse(); else showCourse(); };
+$('cBack').onclick=goHome; $('cFree').onclick=freePlay;
 $('micBtn').onclick=enableMic; $('midiBtn').onclick=enableMidi;
 $('gearBtn').onclick=()=>{ playing=false; updatePlayBtn(); $('sheetBg').classList.remove('hidden'); };
 $('sheetClose').onclick=()=>$('sheetBg').classList.add('hidden');
 $('sheetBg').addEventListener('click',e=>{ if(e.target.id==='sheetBg') $('sheetBg').classList.add('hidden'); });
 $('resAgain').onclick=()=>{ hideModal('resModal'); reset(); playing=true; updatePlayBtn(); };
-$('resClose').onclick=()=>{ hideModal('resModal'); reset(); };
+$('resClose').onclick=()=>{ hideModal('resModal'); if(courseStep) showCourse(); else reset(); };
+$('resNext').onclick=()=>{ hideModal('resModal'); const i=courseStep?courseStep.i+1:0; startStep(i); };
 $('resModal').addEventListener('click',e=>{ if(e.target.id==='resModal') $('resClose').click(); });
 const openHelp=()=>showModal('helpModal'), closeHelp=()=>hideModal('helpModal');
 $('helpBtnHome').onclick=openHelp; $('helpClose').onclick=closeHelp; $('helpX').onclick=closeHelp;
