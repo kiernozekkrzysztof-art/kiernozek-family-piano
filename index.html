@@ -63,6 +63,9 @@ input[type=file]{display:none}
 .stars{color:var(--sun);letter-spacing:1px;font-size:15px}
 .stars i{color:#D9DAEE;font-style:normal}
 .del{position:absolute;top:14px;right:14px;background:rgba(23,21,58,.7);color:#fff;border-radius:999px;font-size:12px;padding:4px 10px}
+.cloud{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:10px 12px 10px 16px;margin:0 0 14px;box-shadow:0 3px 0 #DCDDF0;font-size:14px;color:var(--ink2);font-weight:600}
+.cloud span#cloudStatus{flex:1}
+.cloud .btn{padding:8px 16px;font-size:14px}
 .foot{margin-top:28px;color:var(--ink2);font-size:13px;line-height:1.5}
 
 /* ---------- EKRAN ĆWICZENIA ---------- */
@@ -192,6 +195,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
     </button>
   </div>
   <div class="libhead"><h2>Biblioteka</h2><span id="libCount"></span></div>
+  <div class="cloud"><span class="dot" id="cloudDot"></span><span id="cloudStatus">Sprawdzam chmurę…</span><button class="btn ghost" id="cloudBtn">Połącz</button></div>
   <div class="grid" id="grid"></div>
   <p class="foot">Mikrofon i pianino na kablu USB działają w przeglądarce Chrome. Na telefonie aplikacja musi być otwarta ze strony z adresem https.</p>
  </div>
@@ -287,6 +291,23 @@ input[type=range]{accent-color:var(--azure);width:150px}
   <div class="btns"><button class="btn" id="helpClose">Rozumiem</button></div>
 </div></div>
 
+<div class="modal hidden" id="syncModal"><div class="card help">
+  <button class="x" id="syncX" aria-label="Zamknij">✕</button>
+  <h2>Synchronizacja utworów</h2>
+  <p>Utwory, które dodasz, zapisują się w Twoim <b>prywatnym</b> repozytorium <b>kiernozek-family-piano-songs</b> na GitHubie. Widzisz je tylko Ty, na każdym urządzeniu, na którym raz wkleisz klucz dostępu.</p>
+  <dl>
+    <dt>Jak zdobyć klucz (2 minuty, raz)</dt>
+    <dd>1. Otwórz <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a><br>
+    2. Token name: <b>KiernozekFamilyPiano</b>, Expiration: wybierz najdłuższy okres.<br>
+    3. Repository access: <b>Only select repositories</b> i wybierz <b>kiernozek-family-piano-songs</b>.<br>
+    4. Permissions, Repository permissions: <b>Contents</b> ustaw na <b>Read and write</b>.<br>
+    5. Kliknij <b>Generate token</b>, skopiuj klucz (zaczyna się od github_pat_) i wklej poniżej.</dd>
+  </dl>
+  <input id="tokIn" type="password" placeholder="github_pat_…" autocomplete="off" style="width:100%;margin-top:14px;padding:12px;border-radius:12px;border:2px solid #E3E4F4;font:inherit">
+  <p id="tokMsg"></p>
+  <div class="btns"><button class="btn ghost" id="tokOff">Odłącz to urządzenie</button><button class="btn" id="tokSave">Zapisz klucz</button></div>
+  <p style="font-size:13px">Klucz zostaje tylko na tym urządzeniu i daje dostęp wyłącznie do repozytorium z utworami. Na telefonie i komputerze wklejasz ten sam klucz.</p>
+</div></div>
 <div id="toast"></div>
 <script>
 'use strict';
@@ -302,7 +323,7 @@ function parseMidi(buf){
   if(str(4)!=='MThd') throw new Error('To nie jest plik MIDI');
   const hl=u32(); u16(); const ntr=u16(); const div=u16(); p=8+hl;
   if(div&0x8000) throw new Error('Nieobsługiwany format czasu MIDI (SMPTE)');
-  const tempos=[{t:0,us:500000}], tsigs=[]; const tracks=[];
+  const tempos=[{t:0,us:500000}], tsigs=[], pedals=[]; const tracks=[];
   for(let ti=0;ti<ntr && p<d.byteLength;ti++){
     const id=str(4), len=u32(), end=p+len;
     if(id!=='MTrk'){p=end;continue;}
@@ -318,16 +339,26 @@ function parseMidi(buf){
       if(st===0xF0||st===0xF7){const l=vlq();p+=l;continue;}
       const type=st&0xF0, ch=st&0x0F;
       if(type===0x80||type===0x90){const n=d.getUint8(p++), v=d.getUint8(p++); const k=ch*128+n;
-        if(type===0x90&&v>0){(open[k]=open[k]||[]).push({tick,v});}
-        else if(open[k]&&open[k].length){const o=open[k].shift(); notes.push({n,ch,t0:o.tick,t1:tick,v:o.v});}
-      } else if(type===0xC0||type===0xD0) p+=1; else p+=2;
+        if(type===0x90&&v>0){
+          // ten sam klawisz uderzony ponownie, zanim został puszczony: poprzednia nuta kończy się teraz (tak działa fortepian)
+          if(open[k]){ const o=open[k]; if(tick>o.tick) notes.push({n,ch,t0:o.tick,t1:tick,v:o.v}); }
+          open[k]={tick,v};
+        } else if(open[k]){ const o=open[k]; delete open[k]; notes.push({n,ch,t0:o.tick,t1:Math.max(tick,o.tick+1),v:o.v}); }
+      } else if(type===0xB0){ const c=d.getUint8(p++), v=d.getUint8(p++); if(c===64) pedals.push({ch,tick,on:v>=64}); }
+      else if(type===0xC0||type===0xD0) p+=1; else p+=2;
     }
+    for(const k in open){ const o=open[k]; notes.push({n:k%128,ch:(k/128)|0,t0:o.tick,t1:tick,v:o.v}); }
     p=end; tracks.push({name,notes});
   }
   tempos.sort((a,b)=>a.t-b.t);
   const tmap=[];let acc=0,lt=0,lus=500000;
   for(const tp of tempos){acc+=(tp.t-lt)/div*lus/1e6; lt=tp.t; lus=tp.us; tmap.push({t:tp.t,s:acc,us:lus});}
   const t2s=t=>{let i=tmap.length-1; while(i>0&&tmap[i].t>t)i--; const e=tmap[i]; return e.s+(t-e.t)/div*e.us/1e6;};
+  pedals.sort((a,b)=>a.tick-b.tick);
+  // koniec brzmienia z pedałem: jeśli przy puszczeniu klawisza pedał jest wciśnięty, nuta brzmi do puszczenia pedału (albo ponownego uderzenia klawisza)
+  const nextStrike={}; tracks.forEach(tr=>tr.notes.forEach(n=>{ const k=n.ch*128+n.n; (nextStrike[k]=nextStrike[k]||[]).push(n.t0); })); for(const k in nextStrike) nextStrike[k].sort((a,b)=>a-b);
+  const pedalEnd=(ch,t1,m,t0)=>{ let down=false, rel=null; for(const pe of pedals){ if(pe.ch!==ch) continue; if(pe.tick<=t1) down=pe.on; else if(down&&!pe.on){ rel=pe.tick; break; } }
+    if(!down) return t1; let end=rel===null?t1+div*8:rel; const ns=nextStrike[ch*128+m]; if(ns){ const nx=ns.find(x=>x>t0); if(nx!==undefined&&nx<end) end=nx; } return Math.max(t1,end); };
   const nt=tracks.filter(t=>t.notes.some(n=>n.ch!==9));
   const notes=[];
   // przypisanie rąk: 2+ ścieżki z nutami → 1. = prawa, 2. = lewa; inaczej kanały; inaczej podział na środkowym C
@@ -346,7 +377,8 @@ function parseMidi(buf){
     const hand=handOf.get(tr)||null;
     for(const n of tr.notes){ if(n.ch===9) continue;
       let h=hand; if(mode==='chan') h=(n.ch===chList[0])?'R':'L'; if(!h) h=n.n>=60?'R':'L';
-      const s=t2s(n.t0); notes.push({m:n.n,s,d:Math.max(0.05,t2s(n.t1)-s),h,v:Math.max(0.25,n.v/127)});
+      const s=t2s(n.t0); const e=pedalEnd(n.ch,n.t1,n.n,n.t0);
+      notes.push({m:n.n,s,d:Math.max(0.05,t2s(n.t1)-s),h,v:Math.max(0.25,n.v/127),pd:Math.max(0.05,t2s(e)-s)});
     }
   });
   if(mode==='chan'){ // popraw, gdy kanał niższy gra niżej
@@ -557,16 +589,19 @@ function playTone(m,dur,vel=0.7,when){ if(!AC) return; const t=Math.max(AC.curre
   const band=Math.max(0,Math.min(6,Math.floor((m-24)/12)));
   const boost=1+Math.max(0,60-m)/28;                       // niskie dźwięki głośniej (krzywa słyszalności)
   const peak=Math.min(0.5,vel*0.26*boost);
-  const decay=m<48?2.2:m<60?1.6:m<72?1.2:0.85;            // wysokie wybrzmiewają krócej, jak w fortepianie
-  const len=Math.min(Math.max(dur,0.15)+0.35, 3.5);
+  const decay=m<48?3.2:m<60?2.4:m<72?1.7:1.1;              // stała zaniku: wysokie wybrzmiewają krócej, jak w fortepianie
+  const len=Math.min(Math.max(dur,0.15)+0.4, 8);
   const o=AC.createOscillator(); o.setPeriodicWave(wave(band)); o.frequency.value=f;
   const g=AC.createGain();
   g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+0.004);
-  g.gain.setTargetAtTime(peak*0.35,t+0.004,decay*0.25);
-  g.gain.setTargetAtTime(0.0001,t+Math.max(dur,0.12),0.09);  // puszczenie klawisza
+  g.gain.setTargetAtTime(peak*0.45,t+0.004,0.12);            // szybki spadek po uderzeniu młoteczka
+  g.gain.setTargetAtTime(0.0001,t+0.25,decay);               // naturalne wybrzmiewanie struny
+  g.gain.cancelScheduledValues(t+Math.max(dur,0.12)); g.gain.setTargetAtTime(0.0001,t+Math.max(dur,0.12),0.08); // puszczenie klawisza / pedału
+  // ponowne uderzenie tego samego klawisza wycisza poprzedni dźwięk (jak tłumik w fortepianie)
+  for(const v of voices) if(v.m===m&&v.end>t){ try{ v.g.gain.cancelScheduledValues(t); v.g.gain.setTargetAtTime(0.0001,t,0.03); }catch(e){} v.end=t; }
   o.connect(g); g.connect(master); o.start(t); o.stop(t+len+0.3);
-  voices.push(o); o.onended=()=>{ const i=voices.indexOf(o); if(i>=0) voices.splice(i,1); };
-  if(voices.length>64){ try{ voices.shift().stop(); }catch(e){} }
+  const voice={o,g,m,end:t+len}; voices.push(voice); o.onended=()=>{ const i=voices.indexOf(voice); if(i>=0) voices.splice(i,1); };
+  if(voices.length>96){ const v=voices.shift(); try{ v.g.gain.setTargetAtTime(0.0001,AC.currentTime,0.05); v.o.stop(AC.currentTime+0.3); }catch(e){} }
 }
 function click(strong){ if(!AC) return; const t=AC.currentTime, o=AC.createOscillator(), g=AC.createGain(); o.frequency.value=strong?1600:1100; g.gain.setValueAtTime(0.25,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.05); o.connect(g); g.connect(master); o.start(t); o.stop(t+0.06); }
 
@@ -682,7 +717,7 @@ function frame(now){
     while(apIdx<song.notes.length&&song.notes[apIdx].s<=nt+ahead){
       const n=song.notes[apIdx]; if(n.s<endT-0.01){
         const auto=mode==='listen'||(!isPractice(n.h)&&$('accomp').checked);
-        if(auto) playTone(n.m,n.d/speed,n.v||0.7,AC?AC.currentTime+Math.max(0,(n.s-nt)/speed):0); }
+        if(auto) playTone(n.m,(n.pd||n.d)/speed,n.v||0.7,AC?AC.currentTime+Math.max(0,(n.s-nt)/speed):0); }
       apIdx++; }
     while(beatIdx<song.beats.length&&song.beats[beatIdx]<=nt){
       const b=song.beats[beatIdx];
@@ -1133,13 +1168,76 @@ $('recFile').onchange=async e=>{ const f=e.target.files[0]; if(!f) return; e.tar
 $('recClose').onclick=()=>{ if(recCtx) stopRec(); hideModal('recModal'); };
 
 /* ===================== BIBLIOTEKA ===================== */
+/* ===================== CHMURA (GitHub) ===================== */
+// Utwory użytkownika są zapisywane jako pliki songs/<id>.json w PRYWATNYM repozytorium <aplikacja>-songs.
+// Każde urządzenie potrzebuje raz klucza dostępu (ten sam klucz na wszystkich urządzeniach).
+const GH=(()=>{ const h=location.hostname; if(h.endsWith('.github.io')) return {o:h.split('.')[0], r:(location.pathname.split('/')[1]||'')};
+  return {o:'kiernozekkrzysztof-art', r:'kiernozek-family-piano'}; })();
+const SONGS_REPO=GH.r+'-songs';
+const API='https://api.github.com/repos/'+GH.o+'/'+SONGS_REPO+'/contents/songs';
+function newId(t){ const base=(t||'utwor').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ł/g,'l').replace(/Ł/g,'L').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'utwor';
+  return base+'-'+Math.random().toString(36).slice(2,7); }
+const ghToken=()=>{ try{ return localStorage.getItem('kfp_token')||''; }catch(e){ return ''; } };
+const hdr=(auth)=>{ const h={'Accept':'application/vnd.github+json'}; const t=ghToken(); if(auth&&t) h.Authorization='Bearer '+t; return h; };
+const b64=str=>{ const bytes=new TextEncoder().encode(str); let bin=''; for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000)); return btoa(bin); };
+const unb64=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+let cloudState='idle';
+function setCloud(st,msg){ cloudState=st; const el=$('cloudStatus'); if(!el) return; const t=ghToken();
+  const base= st==='err'? 'Brak połączenia z chmurą' : t? 'Utwory synchronizują się między urządzeniami' : 'Utwory są tylko na tym urządzeniu. Połącz, żeby mieć je wszędzie';
+  el.textContent=msg||base; $('cloudDot').className='dot '+(st==='err'?'err':t?'ok':''); $('cloudBtn').textContent=t?'Ustawienia':'Połącz'; }
+async function cloudSync(){
+  if(!ghToken()){ setCloud('ok'); return; }
+  setCloud('busy','Sprawdzam chmurę…');
+  try{
+    const r=await fetch(API+'?ref=main&t='+Date.now(),{headers:hdr(true),cache:'no-store'});
+    let list=[]; if(r.status===200) list=(await r.json()).filter(f=>f.name.endsWith('.json')); else if(r.status!==404) throw new Error('HTTP '+r.status);
+    const hidden=LS.get('kfp_hidden',[]); let changed=false;
+    // nowe lub zmienione utwory z chmury
+    for(const f of list){ const id=f.name.replace(/\.json$/,''); if(hidden.includes(id)) continue;
+      const local=library.find(l=>l.id===id); if(local&&local.sha===f.sha) continue;
+      try{ const j=await (await fetch(API+'/'+f.name+'?ref=main&t='+Date.now(),{headers:{...hdr(true),'Accept':'application/vnd.github.raw+json'},cache:'no-store'})).json();
+        const song=unpackSong(j.song);
+        if(local){ local.song=song; local.title=j.title; local.sha=f.sha; } else library.push({title:j.title,song,user:true,id,sha:f.sha});
+        changed=true; }catch(e){ console.warn('Nie wczytano',f.name,e); } }
+    // utwory usunięte na innym urządzeniu
+    const ids=new Set(list.map(f=>f.name.replace(/\.json$/,'')));
+    for(let i=library.length-1;i>=0;i--){ const l=library[i]; if(l.user&&l.sha&&!ids.has(l.id)){ library.splice(i,1); changed=true; } }
+    if(changed){ saveUserSongs(); if(!$('home').classList.contains('hidden')) renderHome(); }
+    // lokalne utwory, których jeszcze nie ma w chmurze
+    if(ghToken()) for(const l of library.filter(l=>l.user&&!l.sha)) await cloudUpload(l,true);
+    setCloud('ok');
+  }catch(e){ console.warn(e); setCloud('err'); }
+}
+async function cloudUpload(it,quiet){
+  if(!ghToken()){ if(!quiet&&!LS.get('kfp_hint',false)){ toast('Utwór jest na tym urządzeniu. Połącz synchronizację, żeby mieć go wszędzie'); LS.set('kfp_hint',true); } return; }
+  try{ const body={message:'Dodaj utwór: '+it.title,content:b64(JSON.stringify({title:it.title,song:packSong(it.song)}))}; if(it.sha) body.sha=it.sha;
+    const r=await fetch(API+'/'+it.id+'.json',{method:'PUT',headers:{...hdr(true),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,120));
+    it.sha=(await r.json()).content.sha; saveUserSongs(); if(!quiet) toast('Zapisano w chmurze: '+it.title); setCloud('ok');
+  }catch(e){ console.warn(e); setCloud('err','Nie udało się zapisać w chmurze. Sprawdź klucz w ustawieniach synchronizacji'); }
+}
+async function cloudDelete(it){
+  if(!it||!it.sha) return;
+  if(!ghToken()){ const h=LS.get('kfp_hidden',[]); h.push(it.id); LS.set('kfp_hidden',h); toast('Usunięto z tego urządzenia'); return; }
+  try{ const r=await fetch(API+'/'+it.id+'.json',{method:'DELETE',headers:{...hdr(true),'Content-Type':'application/json'},body:JSON.stringify({message:'Usuń utwór: '+it.title,sha:it.sha})});
+    if(!r.ok&&r.status!==404) throw new Error('HTTP '+r.status); toast('Usunięto: '+it.title);
+  }catch(e){ console.warn(e); toast('Nie udało się usunąć z chmury'); }
+}
+async function checkToken(tok){
+  const r=await fetch('https://api.github.com/repos/'+GH.o+'/'+SONGS_REPO,{headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+tok}});
+  if(r.status===401) return 'Klucz jest nieprawidłowy albo wygasł.';
+  if(!r.ok) return 'Klucz nie ma dostępu do repozytorium '+SONGS_REPO+'.';
+  const j=await r.json(); if(!j.permissions||!j.permissions.push) return 'Klucz ma tylko odczyt. Ustaw „Contents: Read and write”.';
+  return '';
+}
+
 const BUILTIN=library.length;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
-function packSong(s){ return {n:s.notes.map(n=>[n.m,+n.s.toFixed(3),+n.d.toFixed(3),n.h==='R'?1:0]),b:s.bars.map(x=>+x.toFixed(3)),t:s.beats.map(x=>+x.toFixed(3)),p:s.beatsPerBar}; }
-function unpackSong(o){ return finishSong(o.n.map(a=>({m:a[0],s:a[1],d:a[2],h:a[3]?'R':'L'})),o.b,o.t,o.p); }
-function loadUserSongs(){ for(const it of LS.get('kfp_lib',[])){ try{ library.push({title:it.title,song:unpackSong(it.song),user:true}); }catch(e){} } }
-function saveUserSongs(){ const ok=LS.set('kfp_lib',library.filter(l=>l.user).map(l=>({title:l.title,song:packSong(l.song)}))); if(!ok) toast('Brak miejsca, żeby zapamiętać utwór na stałe'); }
-function addSong(title,s){ let t=title, k=2; while(library.some(l=>l.title===t)) t=title+' ('+(k++)+')'; library.push({title:t,song:s,user:true}); saveUserSongs(); renderHome(); return library.length-1; }
+function packSong(s){ return {n:s.notes.map(n=>[n.m,+n.s.toFixed(3),+n.d.toFixed(3),n.h==='R'?1:0,+(n.v||0.7).toFixed(2),+(n.pd||n.d).toFixed(3)]),b:s.bars.map(x=>+x.toFixed(3)),t:s.beats.map(x=>+x.toFixed(3)),p:s.beatsPerBar}; }
+function unpackSong(o){ return finishSong(o.n.map(a=>({m:a[0],s:a[1],d:a[2],h:a[3]?'R':'L',v:a[4]||0.7,pd:a[5]||a[2]})),o.b,o.t,o.p); }
+function loadUserSongs(){ for(const it of LS.get('kfp_lib',[])){ try{ library.push({title:it.title,song:unpackSong(it.song),user:true,id:it.id||newId(it.title),sha:it.sha||null}); }catch(e){} } }
+function saveUserSongs(){ const ok=LS.set('kfp_lib',library.filter(l=>l.user).map(l=>({title:l.title,id:l.id,sha:l.sha||null,song:packSong(l.song)}))); if(!ok) toast('Brak miejsca, żeby zapamiętać utwór na stałe'); }
+function addSong(title,s){ let t=title, k=2; while(library.some(l=>l.title===t)) t=title+' ('+(k++)+')'; const it={title:t,song:s,user:true,id:newId(t),sha:null}; library.push(it); saveUserSongs(); renderHome(); cloudUpload(it); return library.length-1; }
 function bestOf(title){ return LS.get('kfp_best',{})[title]||0; }
 function saveBest(title,pct){ const b=LS.get('kfp_best',{}); if(pct>(b[title]||0)){ b[title]=pct; LS.set('kfp_best',b); return true; } return false; }
 const starsOf=p=>p>=90?3:p>=75?2:p>=50?1:0;
@@ -1166,7 +1264,7 @@ function renderHome(){
     const bars=Math.max(1,l.song.bars.length-1);
     b.innerHTML='<canvas></canvas><h4>'+esc(l.title)+'</h4><div class="meta"><span>'+bars+' takt'+(bars===1?'':bars%10>=2&&bars%10<=4&&(bars%100<10||bars%100>20)?'y':'ów')+', '+fmtTime(l.song.duration)+'</span>'+starHTML(bestOf(l.title))+'</div>'+(l.user?'<span class="del" role="button" tabindex="0">Usuń</span>':'');
     drawCover(b.querySelector('canvas'),l.song,l.title);
-    b.onclick=e=>{ const d=e.target.closest('.del'); if(d){ e.stopPropagation(); if(d.dataset.sure){ library.splice(i,1); saveUserSongs(); renderHome(); } else { d.dataset.sure=1; d.textContent='Na pewno?'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='Usuń'; } },2500); } return; } openSong(i); };
+    b.onclick=e=>{ const d=e.target.closest('.del'); if(d){ e.stopPropagation(); if(d.dataset.sure){ const it=library[i]; library.splice(i,1); saveUserSongs(); renderHome(); cloudDelete(it); } else { d.dataset.sure=1; d.textContent='Na pewno?'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='Usuń'; } },2500); } return; } openSong(i); };
     grid.appendChild(b);
   });
   $('libCount').textContent=library.length+' '+(library.length===1?'utwór':library.length%10>=2&&library.length%10<=4&&(library.length%100<10||library.length%100>20)?'utwory':'utworów');
@@ -1232,7 +1330,15 @@ $('recX').onclick=()=>$('recClose').click();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ ['helpModal','recModal'].forEach(hideModal); $('sheetBg').classList.add('hidden'); } });
 window.addEventListener('resize',()=>{ if(!$('practice').classList.contains('hidden')) resize(); });
 
-loadUserSongs(); renderHome(); syncSpeedUI(); updatePlayBtn();
+$('cloudBtn').onclick=()=>{ $('tokIn').value=''; $('tokMsg').textContent=ghToken()?'To urządzenie jest połączone.':''; showModal('syncModal'); };
+$('syncX').onclick=()=>hideModal('syncModal');
+$('syncModal').addEventListener('click',e=>{ if(e.target.id==='syncModal') hideModal('syncModal'); });
+$('tokSave').onclick=async()=>{ const t=$('tokIn').value.trim(); if(!t){ $('tokMsg').textContent='Wklej klucz.'; return; } $('tokMsg').textContent='Sprawdzam klucz…';
+  try{ const err=await checkToken(t); if(err){ $('tokMsg').textContent='⚠ '+err; return; } localStorage.setItem('kfp_token',t); $('tokMsg').textContent='Połączono!'; setTimeout(()=>hideModal('syncModal'),700); cloudSync(); }
+  catch(e){ $('tokMsg').textContent='⚠ Brak połączenia z internetem.'; } };
+$('tokOff').onclick=()=>{ try{ localStorage.removeItem('kfp_token'); }catch(e){} $('tokMsg').textContent='To urządzenie zostało odłączone.'; setCloud('ok'); };
+loadUserSongs(); renderHome(); syncSpeedUI(); updatePlayBtn(); cloudSync();
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&!$('home').classList.contains('hidden')) cloudSync(); });
 requestAnimationFrame(frame);
 </script>
 </body>
