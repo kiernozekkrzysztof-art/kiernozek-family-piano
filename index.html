@@ -103,7 +103,7 @@ input[type=file]{display:none}
 #profiles h1{font-family:var(--disp);font-weight:600;font-size:clamp(30px,7vw,44px);margin:0 0 6px;text-align:center}
 #profiles p{color:var(--ink2);margin:0 0 28px;text-align:center}
 .plist{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
-.prof{display:flex;flex-direction:column;align-items:center;gap:10px;width:140px;padding:18px 10px 16px;background:#fff;border-radius:26px;box-shadow:0 4px 0 #DCDDF0;transition:transform .12s}
+.prof{display:flex;flex-direction:column;align-items:center;gap:10px;width:168px;padding:18px 10px 16px;background:#fff;border-radius:26px;box-shadow:0 4px 0 #DCDDF0;transition:transform .12s}
 .prof:hover{transform:translateY(-3px)} .prof:active{transform:translateY(2px);box-shadow:0 1px 0 #DCDDF0}
 .prof .av{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font-size:44px}
 .prof b{font-family:var(--disp);font-weight:600;font-size:20px}
@@ -115,6 +115,37 @@ input[type=file]{display:none}
 .avbtn .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:19px}
 .toprt{display:flex;gap:10px;align-items:center}
 @media(max-width:440px){.avbtn{padding:4px}.avbtn #profName{display:none}.brand b{font-size:18px}}
+.ren{position:absolute;top:14px;left:14px;background:rgba(23,21,58,.7);color:#fff;border-radius:999px;font-size:12px;padding:4px 10px}
+/* ---------- FORMA GRACZA: punkty, seria, czas ---------- */
+.me{background:#fff;border-radius:24px;padding:16px;box-shadow:0 4px 0 #DCDDF0;margin:0 0 18px;display:grid;grid-template-columns:auto 1fr auto;gap:8px 18px;align-items:center}
+.me .ringw{position:relative;width:92px;height:92px}
+.me .ringw canvas{width:92px;height:92px}
+.me .ringw div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.me .ringw b{font-family:var(--disp);font-weight:600;font-size:24px}
+.me .ringw small{font-size:11px;color:var(--ink2);font-weight:700;margin-top:3px}
+.lvrow{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.lvrow b{font-family:var(--disp);font-weight:600;font-size:21px}
+.lvrow span{color:var(--ink2);font-weight:700;font-size:14px}
+.xpbar{height:10px;background:#EEEEF8;border-radius:99px;overflow:hidden;margin:8px 0 5px}
+.xpbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sun),#FF9F45);border-radius:99px;transition:width .6s}
+.me .xpt{color:var(--ink2);font-size:13px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chips span{background:#F3F3FC;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:800;color:var(--ink)}
+.chips span.fire{background:#FFEBD9;color:#9A3B00}
+.week{display:flex;align-items:flex-end;gap:5px;height:92px;padding-bottom:16px;position:relative}
+.week div{width:14px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:76px;position:relative}
+.week i{display:block;width:100%;border-radius:5px 5px 3px 3px;background:#DADBF2;min-height:3px}
+.week i.ok{background:var(--mint)} .week div.today i{outline:2px solid var(--ink);outline-offset:1px}
+.week small{position:absolute;bottom:-17px;font-size:10.5px;font-weight:800;color:var(--ink2)}
+.rank{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:2px dashed #EEEEF8;padding-top:10px;margin-top:4px;font-size:13px;font-weight:700;color:var(--ink2)}
+.rank .rk{display:flex;align-items:center;gap:6px;background:#F7F7FD;border-radius:999px;padding:3px 10px 3px 3px;color:var(--ink)}
+.rank .rk.me1{background:#FFF3CC}
+.rank .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;background-size:cover;background-position:center}
+@media(max-width:640px){.me{grid-template-columns:auto 1fr}.week{grid-column:1/-1;justify-content:space-between;height:70px}.week div{width:auto;flex:1;height:54px}}
+.prof .pst{display:flex;flex-direction:column;align-items:center;gap:2px}
+.prof .pst small{font-size:12px}
+@media(max-width:440px){.prof{width:calc(50% - 9px)}.plist{gap:14px}.me .chips span{font-size:12px;padding:4px 9px}}
+.xpgain{font-family:var(--disp);font-weight:600;font-size:20px;color:#C77700;margin:4px 0}
 .fun{background:#FFF6DA;color:#5A4300;border-radius:16px;padding:10px 14px;margin:8px 0 2px;font-weight:700;font-size:14px;line-height:1.4}
 
 /* ---------- KURS: UTWÓR PODZIELONY NA CZĘŚCI ---------- */
@@ -242,6 +273,17 @@ input[type=range]{accent-color:var(--azure);width:150px}
     <h1 id="helloH">Co dziś gramy?</h1>
     <p>Wybierz utwór z biblioteki, wgraj własne nuty albo zagraj coś, a aplikacja zapisze to ze słuchu.</p>
   </div>
+  <div class="me hidden" id="me">
+    <div class="ringw"><canvas id="goalRing" width="184" height="184"></canvas><div><b id="todayMin">0</b><small id="goalTxt">z 10 min</small></div></div>
+    <div>
+      <div class="lvrow"><b id="lvName"></b><span id="lvNum"></span></div>
+      <div class="xpbar"><i id="xpFill"></i></div>
+      <div class="xpt" id="xpTxt"></div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="week" id="week" aria-label="Minuty przy pianinie w ostatnich 7 dniach"></div>
+    <div class="rank" id="rank"></div>
+  </div>
   <div id="contBox"></div>
   <div class="actions">
     <button class="tile" id="loadBtn">
@@ -266,6 +308,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
   <div class="pbar">
     <button class="iconbtn" id="cBack" aria-label="Wróć do biblioteki"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="ptitle"><b id="cTitle">Utwór</b></div>
+    <button class="iconbtn hidden" id="cRen" aria-label="Zmień nazwę utworu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
     <button class="btn free" id="cFree">Graj swobodnie</button>
   </div>
   <div class="cwrap">
@@ -324,6 +367,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
 <div class="modal hidden" id="resModal"><div class="card">
   <div class="big-stars" id="resStars"></div>
   <h2 id="resTitle">Brawo!</h2>
+  <div class="xpgain hidden" id="resXp"></div>
   <p id="resTip"></p>
   <div class="fun hidden" id="resFun"></div>
   <div class="stats"><div><b id="resAcc">0%</b>dokładność</div><div><b id="resHits">0</b>nuty</div><div><b id="resWrong">0</b>błędy</div><div><b id="resTempo">0%</b>tempo</div></div>
@@ -368,8 +412,8 @@ input[type=range]{accent-color:var(--azure);width:150px}
 
 <div class="modal hidden" id="syncModal"><div class="card help">
   <button class="x" id="syncX" aria-label="Zamknij">✕</button>
-  <h2>Synchronizacja utworów</h2>
-  <p>Utwory, które dodasz, zapisują się w Twoim <b>prywatnym</b> repozytorium <b>kiernozek-family-piano-songs</b> na GitHubie. Widzisz je tylko Ty, na każdym urządzeniu, na którym raz wkleisz klucz dostępu.</p>
+  <h2>Synchronizacja</h2>
+  <p>Utwory, postępy, punkty, czas gry i zdjęcia graczy zapisują się w Twoim <b>prywatnym</b> repozytorium <b>kiernozek-family-piano-songs</b> na GitHubie. Widzisz je tylko Ty, na każdym urządzeniu, na którym raz wkleisz klucz dostępu.</p>
   <dl>
     <dt>Jak zdobyć klucz (2 minuty, raz)</dt>
     <dd>1. Otwórz <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a><br>
@@ -382,6 +426,13 @@ input[type=range]{accent-color:var(--azure);width:150px}
   <p id="tokMsg"></p>
   <div class="btns"><button class="btn ghost" id="tokOff">Odłącz to urządzenie</button><button class="btn" id="tokSave">Zapisz klucz</button></div>
   <p style="font-size:13px">Klucz zostaje tylko na tym urządzeniu i daje dostęp wyłącznie do repozytorium z utworami. Na telefonie i komputerze wklejasz ten sam klucz.</p>
+</div></div>
+<div class="modal hidden" id="renModal"><div class="card">
+  <button class="x" id="renX" aria-label="Zamknij">✕</button>
+  <h2>Zmień nazwę</h2>
+  <p>Postęp, gwiazdki i punkty zostają przy utworze.</p>
+  <input id="renIn" type="text" maxlength="80" autocomplete="off" style="width:100%;margin-top:10px;padding:12px;border-radius:12px;border:2px solid #E3E4F4;font:inherit;font-weight:700">
+  <div class="btns"><button class="btn ghost" id="renCancel">Anuluj</button><button class="btn" id="renSave">Zapisz nazwę</button></div>
 </div></div>
 <div id="toast"></div>
 <script>
@@ -708,7 +759,8 @@ function click(strong){ if(!AC) return; const t=AC.currentTime, o=AC.createOscil
 /* ===================== STAN ===================== */
 const $=id=>document.getElementById(id);
 const cv=$('cv'), ctx=cv.getContext('2d');
-let song=library[0].song, songTitle=library[0].title;
+let song=library[0].song, songTitle=library[0].title, songKey='b:'+library[0].title;
+const keyOf=l=>l.user?l.id:'b:'+l.title;      // postęp jest przypięty do utworu, nie do jego nazwy
 let hands='B', mode='wait', speed=0.7, targetSpeed=0.7;
 let playing=false, songTime=0, startT=0, endT=0, lastFrame=0;
 let pnotes=[], events=[], evIdx=0, apIdx=0, beatIdx=0, countIn=false, ciBeats=[], ciIdx=0, pmap=new Map();
@@ -781,8 +833,8 @@ function courseOf(sg){
   if(secs.length>1) steps.push({id:'full',t:'F',sec:secs.length,b0:0,b1:secs[secs.length-1].b1});
   return sg._course={secs,steps};
 }
-function courseStars(){ return (LS.get(pkey('kfp_course'),{})[songTitle])||{}; }
-function saveStepStars(id,k){ const all=LS.get(pkey('kfp_course'),{}); const m=all[songTitle]||(all[songTitle]={}); if(k>(m[id]||0)){ m[id]=k; LS.set(pkey('kfp_course'),all); } }
+function courseStars(){ return (LS.get(pkey('kfp_course'),{})[songKey])||{}; }
+function saveStepStars(id,k){ const all=LS.get(pkey('kfp_course'),{}); const m=all[songKey]||(all[songKey]={}); if(k>(m[id]||0)){ m[id]=k; LS.set(pkey('kfp_course'),all); dirty(); } }
 function stepLabel(st,secs){ const D=STEPDEF[st.t]; if(st.t==='J') return 'Połącz części '+st.sec+'–'+(st.sec+1); if(st.t==='F') return 'Cały utwór'; return 'Część '+(st.sec+1)+' · '+D.n; }
 function barsTxt(b0,b1){ return b0===b1?'takt '+(b0+1):'takty '+(b0+1)+'–'+(b1+1); }
 function nextStepIdx(){ const C=courseOf(song), S=courseStars(); const i=C.steps.findIndex(s=>!(S[s.id]>=1)); return i<0?C.steps.length-1:i; }
@@ -831,6 +883,7 @@ function freePlay(){ courseStep=null; memo=false; $('stepBanner').classList.add(
 
 /* ===================== OCENA ===================== */
 function noteOn(m,src,when){
+  act();
   pressedVisual.set(m,{t:performance.now(),ok:null});
   if(src!=='midi'&&src!=='mic') playTone(m,0.5,0.6);
   if(!playing||mode==='listen'||countIn) return;
@@ -869,14 +922,17 @@ function syncSpeedUI(){ $('speed').value=Math.round(speed*100); $('speedV').text
 
 function finish(){
   playing=false; updatePlayBtn();
-  if(mode==='listen'){ if(courseStep){ saveStepStars(courseStep.id,3); courseResult(3,100); } else reset(); return; }
+  if(mode==='listen'){ if(courseStep){ const prev=courseStars()[courseStep.id]||0; saveStepStars(courseStep.id,3); showXp(gainXP(prev?5:15)); courseResult(3,100); } else reset(); return; }
   const total=pnotes.length||1;
   let acc;
   if(mode==='wait') acc=stats.hits/Math.max(1,stats.hits+stats.wrong);
   else acc=(stats.perfect+0.75*stats.good)/total;
   const pct=Math.round(acc*100), stars=pct>=90?3:pct>=75?2:pct>=50?1:0;
-  if(courseStep){ saveStepStars(courseStep.id,stars); }
-  if($('loop').checked&&!courseStep){ toast((stars?'★'.repeat(stars):'')+' '+pct+'% – jeszcze raz!'); const sp=speed; reset(); speed=sp; playing=true; updatePlayBtn(); return; }
+  let gain=stars*10+Math.min(40,Math.round(stats.hits/4));
+  if(courseStep){ const prev=courseStars()[courseStep.id]||0, C=courseOf(song), st=C.steps[courseStep.i]; saveStepStars(courseStep.id,stars);
+    gain+=Math.max(0,stars-prev)*15; if(!prev&&stars>=1){ if(st.t==='M') gain+=50; if(courseStep.i===C.steps.length-1) gain+=200; } }
+  gain=gainXP(gain); showXp(gain);
+  if($('loop').checked&&!courseStep){ toast((stars?'★'.repeat(stars):'')+' '+pct+'% · +'+gain+' pkt – jeszcze raz!'); const sp=speed; reset(); speed=sp; playing=true; updatePlayBtn(); return; }
   $('resTitle').textContent=stars===3?'Znakomicie!':stars===2?'Bardzo dobrze!':stars===1?'Coraz lepiej':'Spróbujmy wolniej';
   renderStars(stars);
   $('resAcc').textContent=pct+'%'; $('resHits').textContent=stats.hits+'/'+total; $('resWrong').textContent=mode==='wait'?stats.wrong:stats.miss+stats.wrong; $('resTempo').textContent=Math.round(speed*100)+'%';
@@ -887,7 +943,7 @@ function finish(){
   else if(stars>=1) tip='Powtórz ten fragment 2–3 razy w tym samym tempie.';
   else tip='Zwolnij do 50% albo ćwicz każdą rękę osobno, po 2 takty.';
   $('resTip').textContent=tip;
-  if(!courseStep&&saveBest(songTitle,pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
+  if(!courseStep&&saveBest(songKey,pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
   if(courseStep){ courseResult(stars,pct); return; }
   $('resNext').classList.add('hidden'); $('resClose').textContent='Zamknij';
   setFun(funLine(stars,false,false));
@@ -1470,7 +1526,7 @@ const b64=str=>{ const bytes=new TextEncoder().encode(str); let bin=''; for(let 
 const unb64=b=>new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\n/g,'')),c=>c.charCodeAt(0)));
 let cloudState='idle';
 function setCloud(st,msg){ cloudState=st; const el=$('cloudStatus'); if(!el) return; const t=ghToken();
-  const base= st==='err'? 'Brak połączenia z chmurą' : t? 'Utwory synchronizują się między urządzeniami' : 'Utwory są tylko na tym urządzeniu. Połącz, żeby mieć je wszędzie';
+  const base= st==='err'? 'Brak połączenia z chmurą' : t? 'Utwory i postępy synchronizują się między urządzeniami' : 'Utwory i postępy są tylko na tym urządzeniu. Połącz, żeby mieć je wszędzie';
   el.textContent=msg||base; $('cloudDot').className='dot '+(st==='err'?'err':t?'ok':''); $('cloudBtn').textContent=t?'Ustawienia':'Połącz'; }
 async function cloudSync(){
   if(!ghToken()){ setCloud('ok'); return; }
@@ -1489,15 +1545,17 @@ async function cloudSync(){
     // utwory usunięte na innym urządzeniu
     const ids=new Set(list.map(f=>f.name.replace(/\.json$/,'')));
     for(let i=library.length-1;i>=0;i--){ const l=library[i]; if(l.user&&l.sha&&!ids.has(l.id)){ library.splice(i,1); changed=true; } }
-    if(changed){ saveUserSongs(); if(!$('home').classList.contains('hidden')) renderHome(); }
+    if(changed){ saveUserSongs(); migrateKeys(); if(!$('home').classList.contains('hidden')) renderHome(); }
     // lokalne utwory, których jeszcze nie ma w chmurze
     if(ghToken()) for(const l of library.filter(l=>l.user&&!l.sha)) await cloudUpload(l,true);
+    migrateKeys();
+    for(const p of PROFILES) await syncProfile(p.id);
     setCloud('ok');
   }catch(e){ console.warn(e); setCloud('err'); }
 }
-async function cloudUpload(it,quiet){
+async function cloudUpload(it,quiet,msg){
   if(!ghToken()){ if(!quiet&&!LS.get('kfp_hint',false)){ toast('Utwór jest na tym urządzeniu. Połącz synchronizację, żeby mieć go wszędzie'); LS.set('kfp_hint',true); } return; }
-  try{ const body={message:'Dodaj utwór: '+it.title,content:b64(JSON.stringify({title:it.title,song:packSong(it.song)}))}; if(it.sha) body.sha=it.sha;
+  try{ const body={message:msg||('Dodaj utwór: '+it.title),content:b64(JSON.stringify({title:it.title,song:packSong(it.song)}))}; if(it.sha) body.sha=it.sha;
     const r=await fetch(API+'/'+it.id+'.json',{method:'PUT',headers:{...hdr(true),'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error('HTTP '+r.status+' '+(await r.text()).slice(0,120));
     it.sha=(await r.json()).content.sha; saveUserSongs(); if(!quiet) toast('Zapisano w chmurze: '+it.title); setCloud('ok');
@@ -1532,11 +1590,11 @@ const pkey=k=>k+'_'+(profile?profile.id:'krzysztof');      // każdy gracz ma os
 (()=>{ for(const k of ['kfp_best','kfp_course']){ const v=localStorage.getItem(k); if(v!==null&&localStorage.getItem(k+'_krzysztof')===null){ localStorage.setItem(k+'_krzysztof',v); } } })();
 function renderProfiles(){ const box=$('plist'); box.innerHTML='';
   PROFILES.forEach(p=>{ const b=document.createElement('button'); b.className='prof';
-    const n=Object.keys(LS.get('kfp_course_'+p.id,{})).length;
-    b.innerHTML='<span class="av"></span><b>'+p.name+'</b><small>'+(n?'Ćwiczone utwory: '+n:'Zaczynamy!')+'</small><span class="photo" role="button" aria-label="Zmień zdjęcie">📷</span>';
+    const S=calc(p.id), L=levelOf(S.total);
+    b.innerHTML='<span class="av"></span><b>'+p.name+'</b><span class="pst"><small>Poziom '+L.n+' · '+L.name+'</small><small>'+(S.streak?'🔥 '+S.streak+' '+dni(S.streak)+' z rzędu':'Zacznij serię 🔥')+'</small><small>Dziś przy pianinie: '+Math.floor(S.todayP/60)+' min</small></span><span class="photo" role="button" aria-label="Zmień zdjęcie">📷</span>';
     paintAv(b.querySelector('.av'),p);
     b.onclick=e=>{ if(e.target.closest('.photo')){ e.stopPropagation(); photoFor=p.id; $('photoIn').click(); return; } pickProfile(p.id); }; box.appendChild(b); }); }
-// Zdjęcie gracza: zostaje tylko na tym urządzeniu (nie trafia do internetu)
+// Zdjęcie gracza: zapisuje się na urządzeniu i (po połączeniu) w prywatnym repozytorium, nigdy w publicznym
 let photoFor=null;
 function paintAv(el,p){ const ph=LS.get('kfp_avatar_'+p.id,null); if(ph){ el.textContent=''; el.style.backgroundImage='url('+ph+')'; el.style.backgroundColor=p.bg; } else { el.style.backgroundImage=''; el.style.backgroundColor=p.bg; el.textContent=p.em; } }
 $('photoIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!photoFor) return;
@@ -1544,11 +1602,13 @@ $('photoIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; i
     const y0=img.height>img.width*1.15?(img.height-k)*0.08:Math.max(0,(img.height-k)/2-k*0.08);   // na wysokim zdjęciu twarz jest u góry
     const cx=c.getContext('2d'); cx.fillStyle=(PROFILES.find(q=>q.id===photoFor)||{}).bg||'#fff'; cx.fillRect(0,0,S,S);   // przezroczyste tło → kolor profilu
     cx.drawImage(img,(img.width-k)/2,y0,k,k,0,0,S,S);
-    LS.set('kfp_avatar_'+photoFor,c.toDataURL('image/jpeg',0.85)); renderProfiles(); if(profile) renderHome(); toast('Zdjęcie zapisane na tym urządzeniu'); }
+    LS.set('kfp_avatar_'+photoFor,c.toDataURL('image/jpeg',0.85)); LS.set('kfp_avT_'+photoFor,Date.now()); renderProfiles(); if(profile) renderHome();
+    toast(ghToken()?'Zdjęcie zapisane, trafi na wszystkie urządzenia':'Zdjęcie zapisane na tym urządzeniu'); schedulePush(photoFor,1500); }
   catch(err){ toast('Nie mogę wczytać tego zdjęcia'); } };
 function showProfiles(){ renderProfiles(); $('profiles').classList.remove('hidden'); }
-function pickProfile(id){ profile=PROFILES.find(p=>p.id===id); LS.set('kfp_profile',id); $('profiles').classList.add('hidden'); renderHome();
-  if(profile.kid) toast(pick(FUN.hello)); }
+function pickProfile(id){ profile=PROFILES.find(p=>p.id===id); LS.set('kfp_profile',id); $('profiles').classList.add('hidden'); act();
+  const msg=dailyLogin(); renderHome();
+  toast(msg||(profile.kid?pick(FUN.hello):'Cześć '+profile.name+'!')); }
 function pick(a){ const F=profile&&FOOT_BY[profile.id]; if(F&&F[a.key]&&Math.random()<0.6) a=F[a.key]; const s=a[Math.floor(Math.random()*a.length)]; return s.replace(/\{n\}/g,profile?profile.name:''); }
 // Komentarze i żarty dla dzieci (Lucas, Mia)
 const FUN={
@@ -1592,8 +1652,14 @@ function unpackSong(o){ return finishSong(o.n.map(a=>({m:a[0],s:a[1],d:a[2],h:a[
 function loadUserSongs(){ for(const it of LS.get('kfp_lib',[])){ try{ library.push({title:it.title,song:unpackSong(it.song),user:true,id:it.id||newId(it.title),sha:it.sha||null}); }catch(e){} } }
 function saveUserSongs(){ const ok=LS.set('kfp_lib',library.filter(l=>l.user).map(l=>({title:l.title,id:l.id,sha:l.sha||null,song:packSong(l.song)}))); if(!ok) toast('Brak miejsca, żeby zapamiętać utwór na stałe'); }
 function addSong(title,s){ let t=title, k=2; while(library.some(l=>l.title===t)) t=title+' ('+(k++)+')'; const it={title:t,song:s,user:true,id:newId(t),sha:null}; library.push(it); saveUserSongs(); renderHome(); cloudUpload(it); return library.length-1; }
-function bestOf(title){ return LS.get(pkey('kfp_best'),{})[title]||0; }
-function saveBest(title,pct){ const b=LS.get(pkey('kfp_best'),{}); if(pct>(b[title]||0)){ b[title]=pct; LS.set(pkey('kfp_best'),b); return true; } return false; }
+function bestOf(key){ return LS.get(pkey('kfp_best'),{})[key]||0; }
+function saveBest(key,pct){ const b=LS.get(pkey('kfp_best'),{}); if(pct>(b[key]||0)){ b[key]=pct; LS.set(pkey('kfp_best'),b); dirty(); return true; } return false; }
+// stare wyniki zapisane pod nazwą utworu → pod stałym kluczem
+function migrateKeys(){ for(const p of PROFILES){ for(const k of ['kfp_best_','kfp_course_']){ const o=LS.get(k+p.id,null); if(!o) continue; let ch=false;
+      for(const l of library){ const key=keyOf(l); if(key!==l.title&&o[l.title]!==undefined){ const a=o[l.title], b=o[key];
+          o[key]= typeof a==='number' ? Math.max(a,b||0) : maxMap(a||{},b||{}); delete o[l.title]; ch=true; } }
+      if(ch) LS.set(k+p.id,o); }
+    const last=LS.get('kfp_last_'+p.id,null), l=library.find(x=>x.title===last&&keyOf(x)!==last); if(l) LS.set('kfp_last_'+p.id,keyOf(l)); } }
 const starsOf=p=>p>=90?3:p>=75?2:p>=50?1:0;
 const fmtTime=s=>Math.floor(s/60)+':'+String(Math.round(s%60)).padStart(2,'0');
 const PALS=[['#17153A','#2E2A6B'],['#14244F','#2C4C9C'],['#2A1846','#5B2E7E'],['#0E3536','#1E6B66'],['#3A1A2E','#7A2F52']];
@@ -1617,18 +1683,20 @@ function renderHome(){
   library.forEach((l,i)=>{
     const b=document.createElement('button'); b.className='song';
     const bars=Math.max(1,l.song.bars.length-1);
-    b.innerHTML='<canvas></canvas><h4>'+esc(l.title)+'</h4><div class="meta"><span>'+bars+' takt'+(bars===1?'':bars%10>=2&&bars%10<=4&&(bars%100<10||bars%100>20)?'y':'ów')+', '+fmtTime(l.song.duration)+'</span>'+starHTML(bestOf(l.title))+'</div>'+(l.user?'<span class="del" role="button" tabindex="0">Usuń</span>':'');
+    b.innerHTML='<canvas></canvas><h4>'+esc(l.title)+'</h4><div class="meta"><span>'+bars+' takt'+(bars===1?'':bars%10>=2&&bars%10<=4&&(bars%100<10||bars%100>20)?'y':'ów')+', '+fmtTime(l.song.duration)+'</span>'+starHTML(bestOf(keyOf(l)))+'</div>'+(l.user?'<span class="del" role="button" tabindex="0">Usuń</span><span class="ren" role="button" tabindex="0">✎ Nazwa</span>':'');
     drawCover(b.querySelector('canvas'),l.song,l.title);
-    b.onclick=e=>{ const d=e.target.closest('.del'); if(d){ e.stopPropagation(); if(d.dataset.sure){ const it=library[i]; library.splice(i,1); saveUserSongs(); renderHome(); cloudDelete(it); } else { d.dataset.sure=1; d.textContent='Na pewno?'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='Usuń'; } },2500); } return; } openSong(i); };
+    b.onclick=e=>{ if(e.target.closest('.ren')){ e.stopPropagation(); openRename(l); return; } const d=e.target.closest('.del'); if(d){ e.stopPropagation(); if(d.dataset.sure){ const it=library[i]; library.splice(i,1); saveUserSongs(); renderHome(); cloudDelete(it); } else { d.dataset.sure=1; d.textContent='Na pewno?'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='Usuń'; } },2500); } return; } openSong(i); };
     grid.appendChild(b);
   });
   $('libCount').textContent=library.length+' '+(library.length===1?'utwór':library.length%10>=2&&library.length%10<=4&&(library.length%100<10||library.length%100>20)?'utwory':'utworów');
-  const last=LS.get(pkey('kfp_last'),null), li=library.findIndex(l=>l.title===last), box=$('contBox'); box.innerHTML='';
+  renderMe();
+  const last=LS.get(pkey('kfp_last'),null), li=library.findIndex(l=>keyOf(l)===last||l.title===last), box=$('contBox'); box.innerHTML='';
   if(li>=0){ const l=library[li]; box.innerHTML='<div class="cont"><canvas></canvas><div class="t"><small>Ostatnio ćwiczone</small><h3>'+esc(l.title)+'</h3><button class="btn" id="contBtn">Ćwicz dalej</button></div></div>';
     drawCover(box.querySelector('canvas'),l.song,l.title); $('contBtn').onclick=()=>openSong(li); }
 }
 function openSong(i){
-  const l=library[i]; song=l.song; songTitle=l.title; LS.set(pkey('kfp_last'),l.title);
+  const l=library[i]; song=l.song; songTitle=l.title; songKey=keyOf(l); LS.set(pkey('kfp_last'),songKey); LS.set(pkey('kfp_lastT'),Date.now()); dirty(60000);
+  $('cRen').classList.toggle('hidden',!l.user);
   $('pTitle').textContent=l.title;
   if(!song.fingered){ assignFingering(song); song.fingered=true; }
   setupSong(); syncSpeedUI(); showCourse();
@@ -1696,7 +1764,131 @@ $('tokSave').onclick=async()=>{ const t=$('tokIn').value.trim(); if(!t){ $('tokM
   try{ const err=await checkToken(t); if(err){ $('tokMsg').textContent='⚠ '+err; return; } localStorage.setItem('kfp_token',t); $('tokMsg').textContent='Połączono!'; setTimeout(()=>hideModal('syncModal'),700); cloudSync(); }
   catch(e){ $('tokMsg').textContent='⚠ Brak połączenia z internetem.'; } };
 $('tokOff').onclick=()=>{ try{ localStorage.removeItem('kfp_token'); }catch(e){} $('tokMsg').textContent='To urządzenie zostało odłączone.'; setCloud('ok'); };
-loadUserSongs(); renderHome(); syncSpeedUI(); updatePlayBtn(); cloudSync();
+
+/* ===================== POSTĘPY W CHMURZE ===================== */
+// Każdy gracz ma plik profiles/<id>.json w prywatnym repozytorium: gwiazdki, rekordy, zdjęcie, punkty i czas gry.
+// Urządzenia łączą dane bez kasowania: gwiazdki i rekordy biorą wyższą wartość, czas i punkty są liczone osobno dla każdego urządzenia i sumowane.
+const PAPI='https://api.github.com/repos/'+GH.o+'/'+SONGS_REPO+'/contents/profiles';
+const DEV=(()=>{ let d=LS.get('kfp_dev',null); if(!d){ d=Math.random().toString(36).slice(2,8); LS.set('kfp_dev',d); } return d; })();
+const maxMap=(a,b)=>{ const r={...(a||{})}; for(const k in (b||{})) r[k]=Math.max(r[k]||0,b[k]||0); return r; };
+const stab=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((r,q)=>(r[q]=v[q],r),{}):v);
+function profDoc(id){ return {v:1,best:LS.get('kfp_best_'+id,{}),course:LS.get('kfp_course_'+id,{}),last:LS.get('kfp_last_'+id,null),lastT:LS.get('kfp_lastT_'+id,0),
+  avatar:LS.get('kfp_avatar_'+id,null),avT:LS.get('kfp_avT_'+id,0),stats:LS.get('kfp_stats_'+id,{})}; }
+function applyDoc(id,d){ LS.set('kfp_best_'+id,d.best||{}); LS.set('kfp_course_'+id,d.course||{}); if(d.last!=null) LS.set('kfp_last_'+id,d.last); LS.set('kfp_lastT_'+id,d.lastT||0);
+  if(d.avatar) LS.set('kfp_avatar_'+id,d.avatar); LS.set('kfp_avT_'+id,d.avT||0); LS.set('kfp_stats_'+id,d.stats||{}); }
+function mergeStats(a,b){ a=a||{}; b=b||{}; const r={d:{},login:[...new Set([...(a.login||[]),...(b.login||[])])].sort()};
+  const A=a.d||{}, B=b.d||{};
+  for(const day of new Set([...Object.keys(A),...Object.keys(B)])){ const x=A[day]||{}, y=B[day]||{}, o={};
+    for(const dv of new Set([...Object.keys(x),...Object.keys(y)])){ const p=x[dv]||[], q=y[dv]||[]; o[dv]=[0,1,2].map(i=>Math.max(p[i]||0,q[i]||0)); }
+    r.d[day]=o; }
+  return r; }
+function mergeDoc(a,b){ const course={...(a.course||{})}; for(const s in (b.course||{})) course[s]=maxMap(course[s],b.course[s]);
+  const av= !a.avatar? b : !b.avatar? a : (a.avT||0)>(b.avT||0)? a : b;      // przy remisie wygrywa chmura
+  return {v:1,best:maxMap(a.best,b.best),course,last:(b.lastT||0)>(a.lastT||0)?b.last:a.last,lastT:Math.max(a.lastT||0,b.lastT||0),
+    avatar:av.avatar||null,avT:av.avT||0,stats:mergeStats(a.stats,b.stats)}; }
+const profBusy={};
+function syncProfile(id){ if(!ghToken()) return Promise.resolve(); const run=()=>syncProfileNow(id).catch(e=>{ console.warn('Profil',id,e); });
+  return profBusy[id]=(profBusy[id]||Promise.resolve()).then(run); }
+async function syncProfileNow(id,retry){
+  const r=await fetch(PAPI+'/'+id+'.json?ref=main&t='+Date.now(),{headers:hdr(true),cache:'no-store'});
+  let remote=null, sha=null;
+  if(r.status===200){ const j=await r.json(); sha=j.sha; remote=JSON.parse(unb64(j.content)); } else if(r.status!==404) throw new Error('HTTP '+r.status);
+  const before=stab(profDoc(id));
+  let m=remote?mergeDoc(profDoc(id),remote):profDoc(id);
+  applyDoc(id,m); migrateKeys(); m=profDoc(id);
+  if(stab(m)!==before) refreshUI();
+  if(remote&&stab(m)===stab(remote)) return;
+  const body={message:'Postęp: '+((PROFILES.find(p=>p.id===id)||{}).name||id),content:b64(JSON.stringify(m))}; if(sha) body.sha=sha;
+  const w=await fetch(PAPI+'/'+id+'.json',{method:'PUT',headers:{...hdr(true),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if((w.status===409||w.status===422)&&!retry) return syncProfileNow(id,true);    // inne urządzenie zapisało w międzyczasie
+  if(!w.ok) throw new Error('HTTP '+w.status);
+}
+const pushT={};
+function schedulePush(id,ms){ if(!ghToken()||!id) return; const due=Date.now()+ms; if(pushT[id]&&pushT[id].due<=due) return;
+  if(pushT[id]) clearTimeout(pushT[id].t);
+  pushT[id]={due,t:setTimeout(()=>{ delete pushT[id]; syncProfile(id); },ms)}; }
+function flushPushes(){ for(const id in pushT){ clearTimeout(pushT[id].t); delete pushT[id]; syncProfile(id); } }
+function dirty(ms){ if(profile) schedulePush(profile.id,ms||4000); }
+function refreshUI(){ if(!$('profiles').classList.contains('hidden')) renderProfiles();
+  if(profile&&!$('home').classList.contains('hidden')) renderHome();
+  if(!$('course').classList.contains('hidden')) renderCourse(); }
+
+/* ===================== PUNKTY, SERIA DNI, CZAS GRY ===================== */
+const GOAL_MIN=10;                                    // dzienny cel: 10 minut przy pianinie
+const LEVELS=['Debiutant','Junior','Rezerwowy','Zawodnik','Pierwszy skład','Kapitan','Gwiazda','Mistrz','Legenda','Złota Piłka'];
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>ymd(new Date());
+const addDays=(s,n)=>{ const [y,m,d]=s.split('-').map(Number); return ymd(new Date(y,m-1,d+n)); };
+const dni=n=>n===1?'dzień':'dni';
+const fmtMin=sec=>{ const m=Math.floor(sec/60); return m<60?m+' min':Math.floor(m/60)+' h '+(m%60)+' min'; };
+function statsOf(id){ return LS.get('kfp_stats_'+id,{}); }
+function calc(id){ const st=statsOf(id), D=st.d||{}, byDay={}, pm={};
+  for(const day in D){ let p=0,a=0,x=0; for(const dv in D[day]){ const v=D[day][dv]||[]; p+=v[0]||0; a+=v[1]||0; x+=v[2]||0; }
+    pm[day]=[p,a]; byDay[day]=x+(p>=GOAL_MIN*60?30:0); }
+  const L=(st.login||[]).slice().sort(); let run=0, prev=null;
+  for(const day of L){ run=prev&&addDays(prev,1)===day?run+1:1; prev=day; byDay[day]=(byDay[day]||0)+10+5*Math.min(run-1,6); }   // logowanie: 10 pkt + premia za serię
+  const total=Object.values(byDay).reduce((s,v)=>s+v,0), t=today(), set=new Set(L);
+  let streak=0, cur=set.has(t)?t:addDays(t,-1); while(set.has(cur)){ streak++; cur=addDays(cur,-1); }
+  let week=0; for(let i=0;i<7;i++) week+=byDay[addDays(t,-i)]||0;
+  let allP=0; for(const d in pm) allP+=pm[d][0];
+  return {total,byDay,pm,streak,week,allP,todayP:(pm[t]||[0,0])[0],todayA:(pm[t]||[0,0])[1]}; }
+function levelOf(xp){ let n=0; while(50*(n+1)*(n+2)<=xp) n++; const lo=50*n*(n+1), hi=50*(n+1)*(n+2);
+  return {n:n+1,name:LEVELS[Math.min(n,LEVELS.length-1)]+(n>=LEVELS.length?' '+(n-LEVELS.length+2):''),lo,hi,into:xp-lo,need:hi-lo}; }
+function bumpDay(i,v){ if(!profile) return; const st=statsOf(profile.id); st.d=st.d||{}; const t=today(); const o=st.d[t]||(st.d[t]={}); const a=o[DEV]||(o[DEV]=[0,0,0]);
+  a[i]=(a[i]||0)+v; LS.set('kfp_stats_'+profile.id,st); }
+function gainXP(n){ if(!profile||n<=0) return 0; n=Math.round(n); const before=levelOf(calc(profile.id).total).n; bumpDay(2,n); dirty(3000);
+  const L=levelOf(calc(profile.id).total); if(L.n>before) setTimeout(()=>toast('🎉 Awans! Poziom '+L.n+': '+L.name),2200);
+  return n; }
+function showXp(n){ $('resXp').textContent=n?'+'+n+' pkt':''; $('resXp').classList.toggle('hidden',!n); }
+function dailyLogin(){ if(!profile) return ''; const st=statsOf(profile.id), t=today(); st.login=st.login||[]; if(st.login.includes(t)) return '';
+  st.login.push(t); LS.set('kfp_stats_'+profile.id,st); dirty(3000);
+  const s=calc(profile.id).streak, bonus=10+5*Math.min(s-1,6), kid=profile.kid;
+  if(s>=2) return '🔥 '+s+' '+dni(s)+' z rzędu, '+profile.name+'! +'+bonus+' pkt'+(kid&&s%7===0?' Cały tydzień! 🏆':'');
+  return (kid?pick(FUN.hello)+' ':'Cześć '+profile.name+'! ')+'+'+bonus+' pkt za dzisiejsze wejście'; }
+// czas: liczy się tylko, gdy ktoś naprawdę ćwiczy (granie albo dotyk/klawisz w ostatnich sekundach)
+let lastAct=Date.now(), lastDay=today();
+function act(){ lastAct=Date.now(); }
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,act,true));
+setInterval(()=>{ if(!profile||document.hidden) return;
+  if(today()!==lastDay){ lastDay=today(); const m=dailyLogin(); if(m) toast(m); }
+  const idle=Date.now()-lastAct, atPiano=!$('practice').classList.contains('hidden')&&(playing||idle<45000);
+  if(!(playing||idle<120000)) return;
+  const was=calc(profile.id).todayP; bumpDay(1,5); if(atPiano) bumpDay(0,5);
+  if(atPiano&&was<GOAL_MIN*60&&was+5>=GOAL_MIN*60) toast('🎯 Cel dnia zaliczony: '+GOAL_MIN+' minut przy pianinie! +30 pkt');
+  dirty(90000);
+  if(!$('home').classList.contains('hidden')) renderMe(); },5000);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) flushPushes(); });
+function renderMe(){ const box=$('me'); if(!profile){ box.classList.add('hidden'); return; } box.classList.remove('hidden');
+  const S=calc(profile.id), L=levelOf(S.total), t=today();
+  $('lvName').textContent='Poziom '+L.n+' · '+L.name; $('lvNum').textContent=S.total.toLocaleString('pl-PL')+' pkt';
+  $('xpFill').style.width=Math.round(L.into/L.need*100)+'%'; $('xpTxt').textContent='Do poziomu '+(L.n+1)+': jeszcze '+(L.hi-S.total)+' pkt';
+  const mins=Math.floor(S.todayP/60); $('todayMin').textContent=mins; $('goalTxt').textContent=mins>=GOAL_MIN?'cel zaliczony':'z '+GOAL_MIN+' min';
+  const rc=$('goalRing'), x=rc.getContext('2d'), p=Math.min(1,S.todayP/(GOAL_MIN*60)); x.clearRect(0,0,184,184); x.lineWidth=18; x.lineCap='round';
+  x.strokeStyle='#EEEEF8'; x.beginPath(); x.arc(92,92,80,0,7); x.stroke();
+  if(p>0){ const g=x.createLinearGradient(0,0,184,184); g.addColorStop(0,'#2FE0A8'); g.addColorStop(1,'#4F8CFF'); x.strokeStyle=g; x.beginPath(); x.arc(92,92,80,-Math.PI/2,-Math.PI/2+p*Math.PI*2); x.stroke(); }
+  $('chips').innerHTML='<span class="fire">🔥 '+(S.streak?S.streak+' '+dni(S.streak)+' z rzędu':'zacznij serię')+'</span><span>🎹 Dziś '+fmtMin(S.todayP)+' przy pianinie</span><span>📱 '+fmtMin(S.todayA)+' w aplikacji</span><span>⏱ Razem '+fmtMin(S.allP)+'</span>';
+  const DN=['Nd','Pn','Wt','Śr','Cz','Pt','So'], days=[]; for(let i=6;i>=0;i--) days.push(addDays(t,-i));
+  const vals=days.map(d=>(S.pm[d]||[0])[0]/60), mx=Math.max(GOAL_MIN,...vals);
+  $('week').innerHTML=days.map((d,i)=>{ const [y,m,dd]=d.split('-').map(Number), wd=new Date(y,m-1,dd).getDay();
+    return '<div class="'+(d===t?'today':'')+'" title="'+Math.round(vals[i])+' min"><i class="'+(vals[i]>=GOAL_MIN?'ok':'')+'" style="height:'+Math.max(3,Math.round(vals[i]/mx*100))+'%"></i><small>'+DN[wd]+'</small></div>'; }).join('');
+  const rk=PROFILES.map(q=>({q,w:calc(q.id).week})).sort((a,b)=>b.w-a.w);
+  $('rank').innerHTML='<span>Ranking tygodnia</span>'+rk.map((r,i)=>'<span class="rk'+(i===0&&r.w>0?' me1':'')+'"><span class="av" data-p="'+r.q.id+'"></span>'+(i===0&&r.w>0?'👑 ':'')+esc(r.q.name)+' · '+r.w+' pkt</span>').join('');
+  $('rank').querySelectorAll('.av').forEach(el=>paintAv(el,PROFILES.find(q=>q.id===el.dataset.p))); }
+
+/* ===================== ZMIANA NAZWY UTWORU ===================== */
+let renItem=null;
+function openRename(l){ if(!l||!l.user) return; renItem=l; $('renIn').value=l.title; showModal('renModal'); setTimeout(()=>{ $('renIn').focus(); $('renIn').select(); },50); }
+function saveRename(){ const l=renItem; if(!l) return; let t=$('renIn').value.replace(/\s+/g,' ').trim().slice(0,80);
+  if(!t){ toast('Wpisz nazwę'); return; }
+  if(t!==l.title){ const base=t; let k=2; while(library.some(x=>x!==l&&x.title===t)) t=base+' ('+(k++)+')';
+    l.title=t; saveUserSongs(); if(songKey===l.id){ songTitle=t; $('cTitle').textContent=t; $('pTitle').textContent=t; }
+    cloudUpload(l,true,'Zmień nazwę: '+t); toast('Nowa nazwa: '+t); renderHome(); }
+  hideModal('renModal'); renItem=null; }
+$('renSave').onclick=saveRename; $('renCancel').onclick=$('renX').onclick=()=>hideModal('renModal');
+$('renIn').addEventListener('keydown',e=>{ if(e.key==='Enter') saveRename(); });
+$('renModal').addEventListener('click',e=>{ if(e.target.id==='renModal') hideModal('renModal'); });
+$('cRen').onclick=()=>openRename(library.find(l=>l.user&&l.id===songKey));
+loadUserSongs(); migrateKeys(); renderHome(); syncSpeedUI(); updatePlayBtn(); cloudSync();
 showProfiles();
 $('profBtn').onclick=showProfiles;
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&!$('home').classList.contains('hidden')) cloudSync(); });
