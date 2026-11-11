@@ -260,7 +260,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
 <div class="modal hidden" id="recModal"><div class="card">
   <button class="x" id="recX" aria-label="Zamknij">✕</button>
   <h2>Ze słuchu</h2>
-  <p>Zagraj na pianinie, a ja zapiszę nuty. Najlepiej samo pianino, w cichym pokoju.</p>
+  <p>Zagraj na pianinie albo wgraj nagranie, a nuty rozpozna sieć neuronowa. Najlepiej samo pianino, bez śpiewu i innych instrumentów. Długi utwór może się liczyć 1–2 minuty.</p>
   <button class="recbtn" id="recBtn" aria-label="Nagrywaj"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg></button>
   <div><b id="recTime">0:00</b></div>
   <div class="meter"><i id="recLevel"></i></div>
@@ -816,8 +816,14 @@ function draw(now){
   // odliczanie
   if(countIn&&playing){ const bl=song.beats[1]-song.beats[0]||0.6; const left=Math.ceil((startT-songTime)/bl); if(left>0){ const cx=W/2, cy=Math.min(H*0.38,kbTop*0.55);
       ctx.fillStyle='rgba(255,200,69,.14)'; ctx.beginPath(); ctx.arc(cx,cy,56,0,7); ctx.fill(); ctx.fillStyle='#FFC845'; ctx.font='600 68px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(left,cx,cy+3); ctx.textBaseline='alphabetic'; ctx.textAlign='left'; } }
-  if(!playing&&$('resModal').classList.contains('hidden')){ ctx.fillStyle='rgba(23,21,58,.75)'; const t='Naciśnij przycisk start, żeby zacząć'; ctx.font='600 15px '+FONT; const tw=ctx.measureText(t).width+32; const yy=Math.min(kbTop*0.55,H*0.4);
-    rr(W/2-tw/2,yy-20,tw,40,20); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(t,W/2,yy+5); ctx.textAlign='left'; }
+  if(!playing&&$('resModal').classList.contains('hidden')){ const t='Naciśnij przycisk start, żeby zacząć';
+    if(viewMode==='staff'){ // w widoku nut napis nie zasłania pięciolinii
+      const fOnH=$('fingers').checked, size=W<520?62:86, x0=fOnH?10+size*2+40:10, cx=(x0+W-10)/2, cy=fOnH?10+(size*1.16+26)/2+6:Math.max(26,staffTop-18);
+      ctx.font='600 15px '+FONT; const one=ctx.measureText(t).width+32<=W-10-x0; const L=one?[t]:['Naciśnij ▶','żeby zacząć']; const tw=Math.max(...L.map(l=>ctx.measureText(l).width))+30, th=L.length*20+16;
+      ctx.fillStyle='rgba(255,255,255,.10)'; rr(cx-tw/2,cy-th/2,tw,th,16); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      L.forEach((l,i)=>ctx.fillText(l,cx,cy-(L.length-1)*10+i*20)); ctx.textBaseline='alphabetic'; ctx.textAlign='left'; }
+    else { ctx.fillStyle='rgba(23,21,58,.75)'; ctx.font='600 15px '+FONT; const tw=ctx.measureText(t).width+32; const yy=Math.min(kbTop*0.55,H*0.4);
+    rr(W/2-tw/2,yy-20,tw,40,20); ctx.fill(); ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.fillText(t,W/2,yy+5); ctx.textAlign='left'; } }
   // pasek i dokładność
   const acc=mode==='wait'?(stats.hits+stats.wrong?Math.round(stats.hits/(stats.hits+stats.wrong)*100):100):(stats.hits+stats.miss+stats.wrong?Math.round(stats.hits/(stats.hits+stats.miss+stats.wrong)*100):100);
   const as=acc+'%'; if(as!==lastAcc){ $('accV').textContent=as; lastAcc=as; }
@@ -845,7 +851,8 @@ function drawStaff(now,ev,fOn,nOn){
   const left=10, right=W-10, clefEnd=left+Math.max(58,5.4*sp);
   const cursorX=clefEnd+Math.max(30,W*0.12);
   const beatLen=song.beats.length>1?song.beats[1]-song.beats[0]:0.6;
-  const pxSec=Math.max(4.6*sp,64)/beatLen;
+  if(song._ioi===undefined){ const on=[...new Set(song.notes.map(n=>Math.round(n.s*100)))].sort((a,b)=>a-b); const gaps=[]; for(let i=1;i<on.length;i++){ const g=(on[i]-on[i-1])/100; if(g>0.04) gaps.push(g); } gaps.sort((a,b)=>a-b); song._ioi=gaps.length?gaps[Math.floor(gaps.length*0.15)]:beatLen; }
+  const pxSec=Math.min(10*sp/beatLen,Math.max(Math.max(4.6*sp,64)/beatLen,3.9*sp/song._ioi));
   const xOf=t=>cursorX+(t-songTime)*pxSec;
   // papier
   ctx.save(); ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=24; ctx.fillStyle='#FBFBFF'; rr(left,panelTop,right-left,panelH,18); ctx.fill(); ctx.restore();
@@ -857,42 +864,61 @@ function drawStaff(now,ev,fOn,nOn){
   song.bars.forEach((b,i)=>{ const x=xOf(b); if(x<clefEnd-5||x>right) return; const inR=b>=startT-0.01&&b<=endT+0.01;
     ctx.fillStyle=inR?'#3A3866':'#C9C8E0'; ctx.fillRect(Math.round(x-sp*1.6),tTop,Math.max(1,sp*0.1),bTop+4*sp-tTop);
     if(i<song.bars.length-1){ ctx.fillStyle='#8B89B5'; ctx.font='600 '+Math.round(sp*0.95)+'px '+FONT; ctx.fillText(String(i+1),x-sp*1.6+3,tTop-sp*0.6); } });
-  // nuty pogrupowane w akordy
-  const groups=new Map();
-  for(const n of song.notes){ const x=xOf(n.s); if(x<clefEnd-3*sp) continue; if(x>right+2*sp) break;
-    const st=staffOf(n), k=n.s.toFixed(3)+st; if(!groups.has(k)) groups.set(k,{x,st,notes:[]}); groups.get(k).notes.push(n); }
-  for(const gp of groups.values()){
-    const {x,st}=gp; const ys=gp.notes.map(n=>yOf(n.m,st)); const yMin=Math.min(...ys), yMax=Math.max(...ys);
+  // nuty pogrupowane w akordy (nuty prawie równoczesne = jeden akord)
+  const groups=[], lastG={};
+  for(const n of song.notes){ const x=xOf(n.s); if(x<clefEnd-4*sp) continue; if(x>right+3*sp) break;
+    const st=staffOf(n); const g0=lastG[st];
+    if(g0&&Math.abs(n.s-g0.t)<0.035) g0.notes.push(n); else { const g={x,t:n.s,st,notes:[n]}; groups.push(g); lastG[st]=g; } }
+  const rx=sp*0.72, ry=sp*0.52;
+  for(const gp of groups){
+    const {x,st}=gp;
+    const items=gp.notes.map(n=>({n,d:dnOf(n.m),y:yOf(n.m,st),dx:0})).sort((a,b)=>a.d-b.d);
+    const yMin=Math.min(...items.map(o=>o.y)), yMax=Math.max(...items.map(o=>o.y));
     const midY=st==='T'?tTop+2*sp:bTop+2*sp; const up=(yMin+yMax)/2>=midY;
+    // sekundy w akordzie: druga nuta na drugą stronę laski
+    if(up){ for(let i=1;i<items.length;i++) if(items[i].d-items[i-1].d===1&&!items[i-1].dx) items[i].dx=rx*1.84; }
+    else { for(let i=items.length-2;i>=0;i--) if(items[i+1].d-items[i].d===1&&!items[i+1].dx) items[i].dx=-rx*1.84; }
     const beats=Math.max(...gp.notes.map(n=>n.d))/beatLen; const kind=beats>=3.5?'w':beats>=1.6?'h':beats>=0.8?'q':'e';
     const top=st==='T'?tTop:bTop, bot=top+4*sp;
+    const xs=items.map(o=>x+o.dx), lx0=Math.min(...xs)-rx*1.35, lx1=Math.max(...xs)+rx*1.35;
     // linie dodane
     ctx.strokeStyle='#3A3866'; ctx.lineWidth=Math.max(1,sp*0.09);
-    for(let y=top-sp; y>=yMin-0.1; y-=sp){ ctx.beginPath(); ctx.moveTo(x-sp*0.95,y); ctx.lineTo(x+sp*0.95,y); ctx.stroke(); }
-    for(let y=bot+sp; y<=yMax+0.1; y+=sp){ ctx.beginPath(); ctx.moveTo(x-sp*0.95,y); ctx.lineTo(x+sp*0.95,y); ctx.stroke(); }
-    let groupCol='#1D1B45', glow=null;
-    gp.notes.forEach((n,i)=>{
-      const y=ys[i], inRange=n.s>=startT-0.01&&n.s<endT-0.01, prac=inRange&&isPractice(n.h), pn=prac?pmap.get(n):null;
-      let col=prac?'#1D1B45':'#B9B8D3';
-      const waiting=ev&&mode==='wait'&&pn&&ev.notes.includes(pn)&&pn.st===0;
-      if(pn&&pn.st===1) col='#16B985'; else if(pn&&pn.st===2) col='#FF5A6E'; else if(waiting){ col=HC[n.h].b; glow=HC[n.h].a; }
-      if(i===0) groupCol=col;
-      ctx.save(); if(waiting){ ctx.shadowColor=HC[n.h].a; ctx.shadowBlur=14; }
-      ctx.beginPath(); ctx.ellipse(x,y,sp*0.66,sp*0.46,-0.35,0,Math.PI*2);
-      if(kind==='w'||kind==='h'){ ctx.lineWidth=sp*0.2; ctx.strokeStyle=col; ctx.stroke(); } else { ctx.fillStyle=col; ctx.fill(); }
-      ctx.restore();
-      if(isBlack(n.m)){ ctx.fillStyle=col; ctx.font=Math.round(sp*1.7)+'px '+MUSIC; ctx.textAlign='center'; ctx.fillText('♯',x-sp*1.5,y+sp*0.55); ctx.textAlign='left'; }
-      if(nOn){ ctx.fillStyle=prac?HC[n.h].b:'#B9B8D3'; ctx.font='700 '+Math.round(sp*0.85)+'px '+FONT; ctx.fillText(noteName(n.m),x+sp*0.95,y+sp*0.32); }
-    });
-    // laska i chorągiewka
-    if(kind!=='w'){ ctx.strokeStyle=groupCol; ctx.lineWidth=Math.max(1.2,sp*0.12);
-      const sx=up?x+sp*0.6:x-sp*0.6, y0=up?yMax:yMin, y1=up?yMin-3.4*sp:yMax+3.4*sp;
+    for(let y=top-sp; y>=yMin-0.1; y-=sp){ ctx.beginPath(); ctx.moveTo(lx0,y); ctx.lineTo(lx1,y); ctx.stroke(); }
+    for(let y=bot+sp; y<=yMax+0.1; y+=sp){ ctx.beginPath(); ctx.moveTo(lx0,y); ctx.lineTo(lx1,y); ctx.stroke(); }
+    // krzyżyki – zawsze z lewej, w kolumnach żeby się nie nakładały
+    const accs=[]; for(let i=items.length-1;i>=0;i--){ const o=items[i]; if(!isBlack(o.n.m)) continue; let c=0; while(accs.some(a=>a.c===c&&Math.abs(a.d-o.d)<6)) c++; accs.push({d:o.d,c}); o.acc=c; }
+    // stan nut
+    let anyPrac=false, allOk=true, anyBad=false;
+    for(const o of items){ const n=o.n, inRange=n.s>=startT-0.01&&n.s<endT-0.01; o.prac=inRange&&isPractice(n.h); o.pn=o.prac?pmap.get(n):null;
+      o.wait=ev&&mode==='wait'&&o.pn&&ev.notes.includes(o.pn)&&o.pn.st===0;
+      if(o.prac){ anyPrac=true; if(!o.pn||o.pn.st!==1) allOk=false; if(o.pn&&o.pn.st===2) anyBad=true; } }
+    const stemCol=!anyPrac?'#B9B8D3':anyBad?'#FF5A6E':allOk?'#16B985':'#1D1B45';
+    // laska i chorągiewka (pod główkami)
+    if(kind!=='w'){ ctx.strokeStyle=stemCol; ctx.lineWidth=Math.max(1.2,sp*0.12);
+      const sx=up?x+rx*0.93:x-rx*0.93, y0=up?yMax:yMin, y1=up?yMin-3.4*sp:yMax+3.4*sp;
       ctx.beginPath(); ctx.moveTo(sx,y0); ctx.lineTo(sx,y1); ctx.stroke();
       if(kind==='e'){ ctx.beginPath(); ctx.moveTo(sx,y1); ctx.quadraticCurveTo(sx+sp*1.1,y1+(up?1.2:-1.2)*sp,sx+sp*0.8,y1+(up?2.4:-2.4)*sp); ctx.stroke(); } }
-    // numery palców
-    if(fOn){ const fs=gp.notes.map((n,i)=>({f:n.f,y:ys[i]})).filter(o=>o.f).sort((a,b)=>a.y-b.y); const r=Math.max(6,sp*0.62);
-      if(st==='T'){ let yy=Math.min(yMin-(up?3.4*sp:0),tTop)-r-sp*0.5; for(let i=fs.length-1;i>=0;i--){ badge(x,yy,r,fs[i].f); yy-=r*2.1; } }
-      else { let yy=Math.max(yMax+(up?0:3.4*sp),bTop+4*sp)+r+sp*0.5; for(let i=0;i<fs.length;i++){ badge(x,yy,r,fs[i].f); yy+=r*2.1; } } }
+    for(let i=0;i<items.length;i++){ const o=items[i], n=o.n, nx=x+o.dx, y=o.y;
+      const done=o.pn&&o.pn.st===1, bad=o.pn&&o.pn.st===2;
+      const showF=fOn&&n.f, fill=done?'#16B985':bad?'#FF5A6E':!o.prac?'#D9D8EA':showF?FCOL[n.f]:'#1D1B45';
+      const edge=o.prac?'#1D1B45':'#B9B8D3';
+      if(o.acc!==undefined){ ctx.fillStyle=o.prac?'#1D1B45':'#B9B8D3'; ctx.font=Math.round(sp*1.7)+'px '+MUSIC; ctx.textAlign='center'; ctx.fillText('♯',Math.min(...xs)-rx-sp*0.75-o.acc*sp*1.05,y+sp*0.55); ctx.textAlign='left'; }
+      ctx.save(); if(o.wait){ ctx.shadowColor=HC[n.h].a; ctx.shadowBlur=16; }
+      ctx.beginPath(); ctx.ellipse(nx,y,rx,ry,-0.3,0,Math.PI*2);
+      const hollow=kind==='w'||kind==='h';
+      ctx.fillStyle=hollow?'#FFFFFF':fill; ctx.fill(); ctx.restore();
+      ctx.beginPath(); ctx.ellipse(nx,y,rx,ry,-0.3,0,Math.PI*2);
+      if(hollow){ ctx.lineWidth=sp*0.24; ctx.strokeStyle=(fill==='#1D1B45'||fill==='#D9D8EA')?edge:fill; ctx.stroke(); ctx.lineWidth=1; ctx.strokeStyle=edge; ctx.beginPath(); ctx.ellipse(nx,y,rx+sp*0.12,ry+sp*0.12,-0.3,0,Math.PI*2); ctx.stroke(); }
+      else { ctx.lineWidth=Math.max(1,sp*0.08); ctx.strokeStyle=edge; ctx.stroke(); }
+      if(o.wait){ ctx.lineWidth=2.5; ctx.strokeStyle=HC[n.h].b; ctx.beginPath(); ctx.ellipse(nx,y,rx+sp*0.3,ry+sp*0.3,-0.3,0,Math.PI*2); ctx.stroke(); }
+      // w środku główki: palec albo nazwa
+      let inner=showF?String(n.f):(nOn?noteName(n.m):'');
+      if(inner){ const dark=hollow||showF||done||bad||!o.prac; ctx.fillStyle=!o.prac?'#9A98BE':(hollow&&!showF&&!done&&!bad)?'#1D1B45':(dark&&showF?'#1D1B45':'#FFFFFF');
+        ctx.font='800 '+Math.round(sp*(inner.length>1?0.6:0.82))+'px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(inner,nx,y+sp*0.04); ctx.textBaseline='alphabetic'; ctx.textAlign='left'; }
+      // nazwa obok, gdy w środku jest palec
+      if(showF&&nOn){ const freeR=!(up&&items[i+1]&&items[i+1].dx>0)&&o.dx>=0;
+        if(freeR){ ctx.fillStyle=o.prac?HC[n.h].b:'#B9B8D3'; ctx.font='700 '+Math.round(sp*0.7)+'px '+FONT; ctx.fillText(noteName(n.m),nx+rx+(up&&!o.dx?sp*0.32:sp*0.15),y-ry*0.15); } }
+    }
   }
   ctx.restore();
   // pole kluczy (zakrywa przewinięte nuty)
@@ -1102,9 +1128,29 @@ async function transcribe(x,sr,opts){
     for(let i=raw.length-1;i>=0;i--){ const r=raw[i]; if(r.len<8||r.str<med*0.12||(r.len<14&&r.str<med*0.5)) raw.splice(i,1); } }
   raw.sort((p,q)=>p.f0-q.f0);
   let notes=raw.map(r=>({m:r.m,s:fT(r.f0),d:Math.max(0.08,(r.f1-r.f0+1)*HOP/SR)}));
+  return finalizeNotes(notes,onsets.map(fT),opts);
+}
+
+// podział na ręce: śledzimy położenie obu dłoni, akord w jednej ręce max ~oktawa+
+function splitHands(notes){
+  let cL=48,cR=67; const cl=[]; notes.sort((p,q)=>p.s-q.s||p.m-q.m);
+  for(const n of notes){ const c=cl[cl.length-1]; if(c&&n.s-c.t<0.07) c.n.push(n); else cl.push({t:n.s,n:[n]}); }
+  for(const c of cl){ const ns=c.n.sort((a,b)=>a.m-b.m); let best=1e9,bk=0;
+    for(let k=0;k<=ns.length;k++){ const L=ns.slice(0,k), R=ns.slice(k); let cost=0;
+      for(const n of L) cost+=Math.abs(n.m-cL)+(n.m>cR?20:0); for(const n of R) cost+=Math.abs(n.m-cR)+(n.m<cL?20:0);
+      if(L.length&&L[L.length-1].m-L[0].m>14) cost+=60; if(R.length&&R[R.length-1].m-R[0].m>14) cost+=60;
+      if(cost<best){best=cost;bk=k;} }
+    ns.forEach((n,i)=>n.h=i<bk?'L':'R');
+    const L=ns.slice(0,bk), R=ns.slice(bk);
+    if(L.length) cL=Math.min(62,Math.max(33,cL*0.6+0.4*L.reduce((a,n)=>a+n.m,0)/L.length));
+    if(R.length) cR=Math.min(88,Math.max(52,cR*0.6+0.4*R.reduce((a,n)=>a+n.m,0)/R.length));
+    if(cR-cL<9){ const mid=(cR+cL)/2; cL=mid-4.5; cR=mid+4.5; } }
+}
+function finalizeNotes(notes,onT,opts){
+  notes.sort((p,q)=>p.s-q.s||p.m-q.m);
   // tempo
   let bpm=opts.bpm;
-  if(!bpm){ const res=0.01, T=Math.ceil(fT(F)/res)+1, env=new Float32Array(T); onsets.forEach(f=>{const i=Math.round(fT(f)/res); for(let k=-2;k<=2;k++) if(env[i+k]!==undefined) env[i+k]+=Math.exp(-k*k/2);});
+  if(!bpm){ const res=0.01, T=Math.ceil((Math.max(...onT)+2)/res)+1, env=new Float32Array(T); onT.forEach(t=>{const i=Math.round(t/res); for(let k=-2;k<=2;k++) if(env[i+k]!==undefined) env[i+k]+=Math.exp(-k*k/2);});
     let best=0,bl=0.6; for(let lag=Math.round(0.33/res);lag<=Math.round(1.1/res);lag++){ let s=0; for(let i=0;i+lag<T;i++) s+=env[i]*env[i+lag]; const b=60/(lag*res); s*=Math.exp(-Math.pow(Math.log2(b/100),2)*0.8); if(s>best){best=s;bl=lag*res;} }
     bpm=Math.round(60/bl); }
   const beat=60/bpm, t0=notes[0].s;
@@ -1112,10 +1158,39 @@ async function transcribe(x,sr,opts){
     notes=notes.map(n=>{ const s=Math.round((n.s-t0)/g)*g; const e=Math.max(s+g,Math.round((n.s+n.d-t0)/g)*g); return {m:n.m,s,d:e-s}; });
     const seen=new Set(); notes=notes.filter(n=>{const k=n.m+':'+n.s.toFixed(3); if(seen.has(k)) return false; seen.add(k); return true;});
   } else notes=notes.map(n=>({...n,s:n.s-t0}));
-  notes.forEach(n=>n.h=n.m>=60?'R':'L');
+  splitHands(notes);
   const dur=Math.max(...notes.map(n=>n.s+n.d)); const bars=[],beats=[];
   for(let t=0,i=0;t<=dur+beat*4;t+=beat,i++){ beats.push(t); if(i%4===0) bars.push(t); }
   const song=finishSong(notes,bars,beats,4); song.bpm=bpm; return song;
+}
+
+
+/* Rozpoznawanie nut siecią neuronową (Basic Pitch, Spotify, licencja Apache-2.0) */
+let bpLib=null; const BP_CDN='https://cdn.jsdelivr.net/npm/@spotify/basic-pitch@1.0.1/';
+function loadBasicPitch(){ if(bpLib) return bpLib;
+  bpLib=import(BP_CDN+'+esm').then(m=>({...m,model:BP_CDN+'model/model.json'})).catch(()=>new Promise((res,rej)=>{ // zapas: pliki obok aplikacji
+    const sc=document.createElement('script'); sc.src='basic-pitch.js'; sc.onload=()=>window.KFPBasicPitch?res({...window.KFPBasicPitch,model:'model.json'}):rej(new Error('brak modelu')); sc.onerror=()=>rej(new Error('brak modelu')); document.head.appendChild(sc); }));
+  bpLib.catch(()=>{bpLib=null}); return bpLib; }
+async function transcribeAI(x,sr,opts){
+  recStatus('Ładuję model rozpoznawania nut…'); await tick();
+  const L=await loadBasicPitch();
+  const SR=22050, off=new OfflineAudioContext(1,Math.max(1,Math.ceil(x.length*SR/sr)),SR);
+  const ab=off.createBuffer(1,x.length,sr); ab.copyToChannel(x,0); const bs=off.createBufferSource(); bs.buffer=ab; bs.connect(off.destination); bs.start();
+  const y=(await off.startRendering()).getChannelData(0);
+  let mx=0; for(let i=0;i<y.length;i+=4) mx=Math.max(mx,Math.abs(y[i])); if(mx<0.003) throw new Error('Nic nie słychać – zagraj głośniej albo bliżej mikrofonu');
+  if(mx<0.5){ const g=0.5/mx; for(let i=0;i<y.length;i++) y[i]*=g; }
+  const model=new L.BasicPitch(L.model), fr=[],on=[];
+  recStatus('Rozpoznaję nuty… 0%'); await tick();
+  await model.evaluateModel(y,(f,o)=>{ fr.push(...f); on.push(...o); }, p=>recStatus('Rozpoznaję nuty… '+Math.round(p*100)+'%'));
+  recStatus('Składam nuty…'); await tick();
+  const ev=L.noteFramesToTime(L.outputToNotesPoly(fr,on,0.5,0.3,11,true,null,null,true));
+  let notes=ev.filter(n=>n.pitchMidi>=21&&n.pitchMidi<=108&&!(n.durationSeconds<0.09&&n.amplitude<0.3)).map(n=>({m:n.pitchMidi,s:n.startTimeSeconds,d:Math.max(0.08,n.durationSeconds)}));
+  { const cnt={}; notes.forEach(n=>cnt[n.m]=(cnt[n.m]||0)+1); const common=Object.keys(cnt).filter(m=>cnt[m]>=5).map(Number);
+    if(common.length) notes=notes.filter(n=>cnt[n.m]>2||common.some(m=>Math.abs(m-n.m)<=5)); } // pojedyncze dziwne dźwięki (szum, stuk)
+  if(!notes.length) throw new Error('Nie rozpoznałem żadnych nut');
+  if(opts.poly===1){ notes.sort((p,q)=>p.s-q.s); notes=notes.filter(n=>!notes.some(o=>o!==n&&o.m>n.m&&Math.abs(o.s-n.s)<0.07)); }
+  const onT=[...new Set(notes.map(n=>Math.round(n.s*50)/50))];
+  return finalizeNotes(notes,onT,opts);
 }
 
 let recCtx=null;
@@ -1138,7 +1213,10 @@ async function stopRec(){
 }
 async function runTranscribe(x,sr,title){
   try{
-    const song=await transcribe(x,sr,{poly:+$('recPoly').value,quant:$('recQuant').checked,bpm:+$('recBpm').value||0,thr:3.2});
+    const opts={poly:+$('recPoly').value,quant:$('recQuant').checked,bpm:+$('recBpm').value||0,thr:3.2};
+    let song;
+    try{ song=await transcribeAI(x,sr,opts); }
+    catch(e){ if(/Nic nie słychać|Nie rozpoznałem/.test(e.message)) throw e; console.warn(e); recStatus('Model niedostępny – używam prostszego rozpoznawania…'); await tick(); song=await transcribe(x,sr,opts); }
     const idx=addSong(title,song);
     recStatus('Gotowe: '+song.notes.length+' nut, tempo ok. '+song.bpm+' BPM.');
     setTimeout(()=>{ hideModal('recModal'); openSong(idx); toast('Rozpoznano '+song.notes.length+' nut. Włącz Odsłuch, żeby sprawdzić'); },900);
