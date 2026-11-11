@@ -1524,8 +1524,8 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.pa
 /* ===================== PROFILE GRACZY ===================== */
 const PROFILES=[
   {id:'krzysztof',name:'Krzysztof',kid:false,em:'🎹',bg:'#E6EEFF'},
-  {id:'lucas',name:'Lucas',kid:true,em:'🚀',bg:'#DDF8EF'},
-  {id:'mia',name:'Mia',kid:true,em:'🦄',bg:'#FFE6F0'}];
+  {id:'lucas',name:'Lucas',kid:true,em:'⚽',bg:'#DDF8EF'},
+  {id:'mia',name:'Mia',kid:true,em:'⚽',bg:'#FFE6F0'}];
 let profile=PROFILES.find(p=>p.id===LS.get('kfp_profile',null))||null;
 const pkey=k=>k+'_'+(profile?profile.id:'krzysztof');      // każdy gracz ma osobne gwiazdki i postęp
 // stare wyniki (sprzed profili) należą do Krzysztofa
@@ -1549,7 +1549,7 @@ $('photoIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; i
 function showProfiles(){ renderProfiles(); $('profiles').classList.remove('hidden'); }
 function pickProfile(id){ profile=PROFILES.find(p=>p.id===id); LS.set('kfp_profile',id); $('profiles').classList.add('hidden'); renderHome();
   if(profile.kid) toast(pick(FUN.hello)); }
-function pick(a){ if(profile&&profile.id==='lucas'&&FOOT[a.key]&&Math.random()<0.5) a=FOOT[a.key]; const s=a[Math.floor(Math.random()*a.length)]; return s.replace(/\{n\}/g,profile?profile.name:''); }
+function pick(a){ const F=profile&&FOOT_BY[profile.id]; if(F&&F[a.key]&&Math.random()<0.6) a=F[a.key]; const s=a[Math.floor(Math.random()*a.length)]; return s.replace(/\{n\}/g,profile?profile.name:''); }
 // Komentarze i żarty dla dzieci (Lucas, Mia)
 const FUN={
   hello:['Cześć {n}! Palce rozgrzane? 🎹','Hej {n}! Dziś będzie super granie!','{n}, pianino już na Ciebie czeka 😄','Witaj {n}! Gotowy do koncertu? 🎤'],
@@ -1563,16 +1563,26 @@ const FUN={
   song:['{n}, CAŁY UTWÓR OPANOWANY! Czas na koncert dla rodziny! 🎉🎹','Mistrz! {n} zna cały utwór! Zagraj go komuś! 🏆']
 };
 for(const k in FUN) FUN[k].key=k;
-// Lucas lubi piłkę nożną ⚽
-const FOOT={
-  start:['{n}, wychodzisz na boisko! Gwizdek i gramy! ⚽','Rozgrzewka zaliczona, {n}. Czas strzelać nuty! 🥅'],
-  streak:['GOOOL! {n} strzela nutę za nutą! ⚽🔥','{n}, to jest hat-trick na klawiszach! 🎩⚽','Kibice na trybunach wstają, {n}! 🙌'],
-  great:['{n}, takie granie to jak gol w finale Mistrzostw! 🏆⚽','Brawo {n}! Numer 20 znowu strzela! ⚽','{n}, trener daje Ci dziś opaskę kapitana! 🧢'],
-  good:['Dobry mecz, {n}! Jeszcze trochę treningu i będzie puchar 🏆','{n}, prawie gol! Następny strzał wpadnie ⚽'],
-  low:['{n}, nawet najlepsi piłkarze czasem trafiają w słupek. Jeszcze raz! ⚽','Spokojnie, {n}. To tylko trening, mecz wygramy! 💪'],
-  joke:['Dlaczego piłkarz zabrał pianino na mecz? Bo chciał zagrać na skrzydle! 🎹⚽','Co mówi bramkarz do pianisty? Ty też łapiesz każdą nutę? 🧤','Dlaczego piłka lubi muzykę? Bo zawsze jest w rytmie odbicia! ⚽🎵'],
-  part:['Część zaliczona! {n}, to jak wygrana połowa meczu! ⚽'],
-  song:['{n} wygrywa cały mecz! UTWÓR OPANOWANY! 🏆⚽🎹']
+// Lucas i Mia kochają piłkę nożną i FC Barcelonę ⚽🔵🔴
+const FOOT_BY={
+ lucas:{
+  start:['{n}, wychodzisz na Camp Nou! Gwizdek i gramy! ⚽','Rozgrzewka zaliczona, {n}. Czas strzelać nuty jak Lewandowski! 🥅','Visca el Barça! {n}, do gry! 🔵🔴'],
+  streak:['GOOOL! {n} strzela nutę za nutą jak Lewy! ⚽🔥','{n}, to jest hat-trick na klawiszach! 🎩⚽','Kibice na Camp Nou wstają, {n}! 🙌','{n}, dryblujesz przez klawisze jak Messi! 🐐'],
+  great:['{n}, takie granie to jak gol w finale Ligi Mistrzów! 🏆⚽','Brawo {n}! Numer 20 znowu strzela! ⚽','{n}, Messi też tak zaczynał: trening, trening i magia! ✨','{n}, Lewandowski byłby dumny z takiej skuteczności! 🎯','{n}, trener Barcy daje Ci dziś opaskę kapitana! 🧢🔵🔴'],
+  good:['Dobry mecz, {n}! Jeszcze trochę treningu i będzie puchar 🏆','{n}, prawie gol! Następny strzał wpadnie ⚽','{n}, Lewy też nie strzela z każdej akcji. Dalej! 💪'],
+  low:['{n}, nawet Messi czasem trafia w słupek. Jeszcze raz! ⚽','Spokojnie, {n}. To tylko trening, mecz wygramy! 💪','{n}, każdy wielki piłkarz najpierw dużo trenował. Zagraj wolniej 🐢'],
+  joke:['Dlaczego piłkarz zabrał pianino na mecz? Bo chciał zagrać na skrzydle! 🎹⚽','Co mówi bramkarz do pianisty? Ty też łapiesz każdą nutę? 🧤','Dlaczego piłka lubi muzykę? Bo zawsze jest w rytmie odbicia! ⚽🎵','Jaki jest ulubiony akord kibica Barcy? Blau-grana-dur! 🔵🔴🎹'],
+  part:['Część zaliczona! {n}, to jak wygrana pierwsza połowa El Clásico! ⚽','{n}, 1:0 dla Ciebie! Gramy dalej! 🔵🔴'],
+  song:['{n} wygrywa cały mecz! UTWÓR OPANOWANY! 🏆⚽🎹','Mistrzostwo! {n} zdobywa puchar całego utworu! Visca el Barça! 🏆🔵🔴']},
+ mia:{
+  start:['{n}, numer 8 wychodzi na boisko! ⚽','Visca el Barça! {n}, do gry! 🔵🔴','{n}, rozgrzej palce jak Ewa Pajor przed meczem! 💪'],
+  streak:['GOOOL! {n} strzela jak Ewa Pajor! ⚽🔥','{n}, rozgrywasz nuty jak Pedri piłkę! ✨','Ósemka w formie! {n} nie myli się wcale! 8️⃣🔥','{n}, cała Barça bije brawo! 👏🔵🔴'],
+  great:['{n}, takie podanie do nut zrobiłby tylko Pedri! ⚽✨','Brawo {n}! Numer 8 znowu błyszczy! 8️⃣⭐','{n}, to było skuteczne jak Ewa Pajor pod bramką! 🎯','{n}, trenerka Barcy daje Ci opaskę kapitanki! 🧢🔵🔴'],
+  good:['Dobry mecz, {n}! Jeszcze trochę treningu i będzie puchar 🏆','{n}, prawie gol! Następny strzał wpadnie ⚽','{n}, Pedri też ćwiczy każde podanie wiele razy. Dalej! 💪'],
+  low:['{n}, nawet Ewa Pajor czasem trafia w słupek. Jeszcze raz! ⚽','Spokojnie, {n}. To tylko trening, mecz wygramy! 💪','{n}, numer 8 nigdy się nie poddaje. Zagraj wolniej 🐢'],
+  joke:['Dlaczego piłkarka zabrała pianino na mecz? Bo chciała zagrać na skrzydle! 🎹⚽','Co mówi bramkarka do pianistki? Ty też łapiesz każdą nutę? 🧤','Dlaczego ósemka lubi muzykę? Bo leżąca ósemka to nieskończoność, a muzyka jest bez końca! ♾️🎵','Jaki jest ulubiony akord kibicki Barcy? Blau-grana-dur! 🔵🔴🎹'],
+  part:['Część zaliczona! {n}, to jak gol w pierwszej połowie! ⚽','{n}, 1:0 dla Ciebie! Gramy dalej! 🔵🔴'],
+  song:['{n} wygrywa cały mecz! UTWÓR OPANOWANY! 🏆⚽🎹','Mistrzyni! {n} zdobywa puchar całego utworu! Visca el Barça! 🏆🔵🔴']}
 };
 function funLine(stars,lastOfPart,lastOfSong){ if(!profile||!profile.kid) return '';
   const head=lastOfSong&&stars>=1?pick(FUN.song):lastOfPart&&stars>=1?pick(FUN.part):stars>=3?pick(FUN.great):stars>=1?pick(FUN.good):pick(FUN.low);
