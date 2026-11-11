@@ -354,6 +354,19 @@ body{background:radial-gradient(1100px 700px at 100% -10%,rgba(163,21,75,.42),tr
 .tile .ic{background:rgba(255,255,255,.1)!important}
 #home{padding-bottom:calc(110px + var(--safe-b))}
 @media(max-width:640px){.hello{margin:22px 0 16px}.hello p{font-size:14px}.me{padding:16px;gap:8px 14px}.me .ringw,.me .ringw canvas{width:76px;height:76px}.me .ringw b{font-size:20px}.chips span:nth-child(3){display:none}}
+/* poziomy trudności */
+.lvsel{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.lvb{display:flex;align-items:center;gap:10px;text-align:left;padding:12px 12px;border-radius:20px;background:var(--glass);border:2px solid var(--edge);color:var(--cream);transition:border-color .15s,background .15s}
+.lvb:hover{background:var(--glass2)}
+.lvb.on{border-color:var(--gold);background:rgba(246,195,67,.14);box-shadow:0 0 22px rgba(246,195,67,.22)}
+.lvb .le{font-size:24px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--glass2);flex:none}
+.lvb.on .le{background:var(--gold)}
+.lvb .lt{display:flex;flex-direction:column;min-width:0;flex:1}
+.lvb b{font-family:var(--disp);font-weight:700;font-size:17px}
+.lvb small{color:var(--mute);font-size:12px;line-height:1.25}
+.lvb .lp{font-family:var(--disp);font-weight:600;font-size:14px;color:var(--mint)}
+.song .lvtag{display:inline-block;margin-left:8px;background:rgba(11,16,51,.35);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;color:#fff}
+@media(max-width:560px){.lvsel{gap:6px}.lvb{flex-direction:column;text-align:center;padding:10px 6px;gap:4px}.lvb .lt{align-items:center}.lvb small{font-size:11px}}
 /* ekran startowy */
 #splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(800px 600px at 50% 40%,rgba(37,52,143,.9),transparent 70%),radial-gradient(600px 500px at 90% 100%,rgba(163,21,75,.6),transparent 60%),#0B1033;transition:opacity .5s}
 #splash .logo{animation:pop .7s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 18px 40px rgba(0,0,0,.45))}
@@ -437,6 +450,7 @@ body{background:radial-gradient(1100px 700px at 100% -10%,rgba(163,21,75,.42),tr
   </div>
   <div class="cwrap">
     <div class="chead"><canvas class="ring" id="cRing" width="128" height="128"></canvas><div><h2 id="cHead"></h2><p id="cSub"></p></div></div>
+    <div class="lvsel" id="lvSel" role="group" aria-label="Poziom trudności"></div>
     <div class="nextbox" id="cNext"></div>
     <div id="cParts"></div>
   </div>
@@ -934,6 +948,56 @@ const STEPDEF={
   J:{e:'🔗',n:'Połącz',mode:'tempo',hands:'B',sp:0.75,d:'Połącz tę część z poprzednią, w rytmie.'},
   F:{e:'🏆',n:'Cały utwór',mode:'tempo',hands:'B',sp:0.85,d:'Zagraj cały utwór od początku do końca.'}
 };
+/* ===================== POZIOMY TRUDNOŚCI ===================== */
+// 1 Łatwy: tylko prawa ręka, sama melodia (najwyższy głos), bez ozdobników i gęstych przebiegów
+// 2 Średni: melodia w prawej + prosty bas w lewej (jedna długa nuta na pół taktu)
+// 3 Trudny: pełny utwór, tak jak został zapisany
+const LEVELS_DEF={1:{n:'Łatwy',d:'Prawa ręka, sama melodia',e:'🌱'},2:{n:'Średni',d:'Melodia i prosty bas',e:'⭐'},3:{n:'Trudny',d:'Pełny utwór, obie ręce',e:'🏆'}};
+function melodyOf(base,minGap){
+  const bl=base.beats.length>1?base.beats[1]-base.beats[0]:0.5;
+  let src=base.notes.filter(n=>n.h==='R'); if(src.length<4) src=base.notes.slice();
+  src=src.slice().sort((a,b)=>a.s-b.s||b.m-a.m);
+  const on=[]; for(const n of src){ const e=on[on.length-1]; if(e&&n.s-e.s<0.045){ if(n.m>e.m) on[on.length-1]=n; } else on.push(n); }   // najwyższy głos
+  const mel=[]; for(const n of on){ const p=mel[mel.length-1];
+    if(p&&n.s-p.s<minGap*bl){ if(n.m>p.m+2&&(n.v||0.6)>=(p.v||0.6)) mel[mel.length-1]=n; continue; }       // za gęsto – zostaje ważniejsza nuta
+    mel.push(n); }
+  return mel.map((n,i)=>{ const nx=mel[i+1], room=(nx?nx.s:base.duration)-n.s;
+    return {m:n.m,s:n.s,d:Math.max(Math.min(room*0.94,Math.max(n.d,bl*0.5),bl*2),Math.min(room*0.94,bl*0.25)),h:'R',v:n.v}; });
+}
+function bassOf(base){
+  const L=base.notes.filter(n=>n.h==='L'); if(!L.length) return [];
+  const out=[], bars=base.bars, half=(base.beatsPerBar||4)%2===0;
+  for(let i=0;i+1<bars.length;i++){ const a=bars[i], b=bars[i+1], segs=half?[[a,(a+b)/2],[(a+b)/2,b]]:[[a,b]];
+    for(const [x,y] of segs){ const inSeg=L.filter(n=>n.s>=x-0.03&&n.s<y-0.03); if(!inSeg.length) continue;
+      const early=inSeg.filter(n=>n.s<x+(y-x)*0.4), pool=early.length?early:inSeg;
+      let m=Math.min(...pool.map(n=>n.m)); while(m<36) m+=12; while(m>57) m-=12;
+      const st=Math.min(...pool.filter(n=>n.m%12===m%12).map(n=>n.s));
+      out.push({m,s:Math.max(x,st),d:(y-Math.max(x,st))*0.95,h:'L',v:0.55}); } }
+  return out;
+}
+function levelSong(base,lv){
+  if(lv>=3) return base;
+  base._lv=base._lv||{}; if(base._lv[lv]) return base._lv[lv];
+  const notes=lv===1?melodyOf(base,0.45):melodyOf(base,0.22).concat(bassOf(base));
+  notes.sort((a,b)=>a.s-b.s||a.m-b.m);
+  const sg={notes,bars:base.bars,beats:base.beats,beatsPerBar:base.beatsPerBar,duration:base.duration,bpm:base.bpm,level:lv};
+  assignFingering(sg); sg.fingered=true;
+  return base._lv[lv]=sg;
+}
+let level=3, baseSong=null;
+const lvKey=(key,lv)=>lv>=3?key:key+'#'+lv;
+const pk=()=>lvKey(songKey,level);
+function chosenLevel(key){ const m=LS.get(pkey('kfp_lvl'),{}); if(m[key]) return m[key];
+  const C=LS.get(pkey('kfp_course'),{}); if(C[key]&&Object.keys(C[key]).length) return 3;
+  return profile&&profile.kid?1:2; }
+function setLevel(lv){ level=lv; const m=LS.get(pkey('kfp_lvl'),{}); m[songKey]=lv; LS.set(pkey('kfp_lvl'),m); dirty();
+  song=levelSong(baseSong,lv); setupSong(); renderCourse(); }
+function levelPct(sg,key){ try{ const C=courseOf(sg), S=(LS.get(pkey('kfp_course'),{})[key])||{}; return Math.round(C.steps.filter(x=>S[x.id]>=1).length/C.steps.length*100); }catch(e){ return 0; } }
+function renderLevels(){ const box=$('lvSel'); box.innerHTML='';
+  for(const lv of [1,2,3]){ const D=LEVELS_DEF[lv], pc=levelPct(levelSong(baseSong,lv),lvKey(songKey,lv)), b=document.createElement('button');
+    b.className='lvb'+(lv===level?' on':''); b.setAttribute('aria-pressed',lv===level);
+    b.innerHTML='<span class="le">'+D.e+'</span><span class="lt"><b>'+D.n+'</b><small>'+D.d+'</small></span><span class="lp">'+pc+'%</span>';
+    b.onclick=()=>{ if(lv!==level){ setLevel(lv); toast(D.e+' Poziom: '+D.n+'. '+D.d); } }; box.appendChild(b); } }
 function makeSections(sg){
   const nb=Math.max(1,sg.bars.length-1), cnt=new Array(nb).fill(0);
   for(const n of sg.notes){ let i=0; while(i<nb-1&&n.s>=sg.bars[i+1]-0.01) i++; cnt[i]++; }
@@ -957,14 +1021,14 @@ function courseOf(sg){
   if(secs.length>1) steps.push({id:'full',t:'F',sec:secs.length,b0:0,b1:secs[secs.length-1].b1});
   return sg._course={secs,steps};
 }
-function courseStars(){ return (LS.get(pkey('kfp_course'),{})[songKey])||{}; }
-function saveStepStars(id,k){ const all=LS.get(pkey('kfp_course'),{}); const m=all[songKey]||(all[songKey]={}); if(k>(m[id]||0)){ m[id]=k; LS.set(pkey('kfp_course'),all); dirty(); } }
+function courseStars(){ return (LS.get(pkey('kfp_course'),{})[pk()])||{}; }
+function saveStepStars(id,k){ const all=LS.get(pkey('kfp_course'),{}); const m=all[pk()]||(all[pk()]={}); if(k>(m[id]||0)){ m[id]=k; LS.set(pkey('kfp_course'),all); dirty(); } }
 function stepLabel(st,secs){ const D=STEPDEF[st.t]; if(st.t==='J') return 'Połącz części '+st.sec+'–'+(st.sec+1); if(st.t==='F') return 'Cały utwór'; return 'Część '+(st.sec+1)+' · '+D.n; }
 function barsTxt(b0,b1){ return b0===b1?'takt '+(b0+1):'takty '+(b0+1)+'–'+(b1+1); }
 function nextStepIdx(){ const C=courseOf(song), S=courseStars(); const i=C.steps.findIndex(s=>!(S[s.id]>=1)); return i<0?C.steps.length-1:i; }
 function renderCourse(){
   const C=courseOf(song), S=courseStars(), ni=nextStepIdx(), done=C.steps.filter(s=>S[s.id]>=1).length;
-  $('cTitle').textContent=songTitle;
+  $('cTitle').textContent=songTitle; renderLevels();
   $('cHead').textContent=done>=C.steps.length?'Utwór opanowany! 🎉':C.secs.length+' '+(C.secs.length===1?'część':C.secs.length%10>=2&&C.secs.length%10<=4&&(C.secs.length%100<10||C.secs.length%100>20)?'części':'części')+', krok po kroku';
   $('cSub').textContent='Ukończone kroki: '+done+' z '+C.steps.length+'. Każdą część uczysz się osobno, potem łączysz z poprzednią.';
   // pierścień postępu
@@ -997,7 +1061,7 @@ function startStep(i){
   speed=targetSpeed=D.sp; syncSpeedUI(); $('loop').checked=false;
   $('fromBar').value=st.b0+1; $('toBar').value=st.b1+1;
   $('course').classList.add('hidden'); $('practice').classList.remove('hidden'); resize(); reset();
-  $('stepBanner').textContent=D.e+' '+stepLabel(st)+' · '+barsTxt(st.b0,st.b1); $('stepBanner').classList.remove('hidden');
+  $('stepBanner').textContent=LEVELS_DEF[level].n+' · '+D.e+' '+stepLabel(st)+' · '+barsTxt(st.b0,st.b1); $('stepBanner').classList.remove('hidden');
   toast(profile&&profile.kid?pick(FUN.start)+' '+D.d:D.d);
 }
 function showCourse(){ playing=false; updatePlayBtn(); courseStep=null; memo=false; $('stepBanner').classList.add('hidden');
@@ -1067,7 +1131,7 @@ function finish(){
   else if(stars>=1) tip='Powtórz ten fragment 2–3 razy w tym samym tempie.';
   else tip='Zwolnij do 50% albo ćwicz każdą rękę osobno, po 2 takty.';
   $('resTip').textContent=tip;
-  if(!courseStep&&saveBest(songKey,pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
+  if(!courseStep&&saveBest(pk(),pct)&&pct>0) $('resTip').textContent='Nowy rekord! '+tip;
   if(courseStep){ courseResult(stars,pct); return; }
   $('resNext').classList.add('hidden'); $('resClose').textContent='Zamknij';
   setFun(funLine(stars,false,false));
@@ -1780,8 +1844,9 @@ function bestOf(key){ return LS.get(pkey('kfp_best'),{})[key]||0; }
 function saveBest(key,pct){ const b=LS.get(pkey('kfp_best'),{}); if(pct>(b[key]||0)){ b[key]=pct; LS.set(pkey('kfp_best'),b); dirty(); return true; } return false; }
 // stare wyniki zapisane pod nazwą utworu → pod stałym kluczem
 function migrateKeys(){ for(const p of PROFILES){ for(const k of ['kfp_best_','kfp_course_']){ const o=LS.get(k+p.id,null); if(!o) continue; let ch=false;
-      for(const l of library){ const key=keyOf(l); if(key!==l.title&&o[l.title]!==undefined){ const a=o[l.title], b=o[key];
-          o[key]= typeof a==='number' ? Math.max(a,b||0) : maxMap(a||{},b||{}); delete o[l.title]; ch=true; } }
+      for(const l of library){ const key=keyOf(l); if(key===l.title) continue;
+        for(const sfx of ['','#1','#2']){ const ok=l.title+sfx, nk=key+sfx; if(o[ok]===undefined) continue; const a=o[ok], b=o[nk];
+          o[nk]= typeof a==='number' ? Math.max(a,b||0) : maxMap(a||{},b||{}); delete o[ok]; ch=true; } }
       if(ch) LS.set(k+p.id,o); }
     const last=LS.get('kfp_last_'+p.id,null), l=library.find(x=>x.title===last&&keyOf(x)!==last); if(l) LS.set('kfp_last_'+p.id,keyOf(l)); } }
 const starsOf=p=>p>=90?3:p>=75?2:p>=50?1:0;
@@ -1802,15 +1867,15 @@ function drawCover(c,s,title,bare){
 function starHTML(p){ const k=starsOf(p); return '<span class="stars" aria-label="'+k+' z 3 gwiazdek">'+'★'.repeat(k)+'<i>'+'★'.repeat(3-k)+'</i></span>'; }
 function esc(t){ return t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 const SC=['#A3154B','#2440B8','#0F7C86','#5B2A86','#B0601A','#1D6E48'];
-function songPct(l){ try{ const C=courseOf(l.song), S=(LS.get(pkey('kfp_course'),{})[keyOf(l)])||{}; return Math.round(C.steps.filter(x=>S[x.id]>=1).length/C.steps.length*100); }catch(e){ return 0; } }
+function songPct(l){ const lv=chosenLevel(keyOf(l)); return levelPct(levelSong(l.song,lv),lvKey(keyOf(l),lv)); }
 function renderHome(){
   if(profile){ paintAv($('profAv'),profile); $('profName').textContent=profile.name; $('helloH').textContent=profile.kid?'Cześć '+profile.name+'! Co gramy?':'Co dziś gramy, '+profile.name+'?'; }
   const grid=$('grid'); grid.innerHTML='';
   library.forEach((l,i)=>{
     const b=document.createElement('button'); b.className='song'; b.style.setProperty('--sc',SC[hash(keyOf(l))%SC.length]);
     const bars=Math.max(1,l.song.bars.length-1), pc=songPct(l);
-    b.innerHTML='<canvas></canvas><div class="sti"><h4>'+esc(l.title)+'</h4><span class="sub">'+bars+' takt'+(bars===1?'':bars%10>=2&&bars%10<=4&&(bars%100<10||bars%100>20)?'y':'ów')+' · '+fmtTime(l.song.duration)+'</span></div>'
-      +'<div class="sbot">'+starHTML(bestOf(keyOf(l)))+(l.user?'<span class="ren" role="button" tabindex="0">✎ Nazwa</span><span class="del" role="button" tabindex="0">Usuń</span>':'')+'</div>'
+    b.innerHTML='<canvas></canvas><div class="sti"><h4>'+esc(l.title)+'</h4><span class="sub">'+bars+' takt'+(bars===1?'':bars%10>=2&&bars%10<=4&&(bars%100<10||bars%100>20)?'y':'ów')+' · '+fmtTime(l.song.duration)+'</span><span class="lvtag">'+LEVELS_DEF[chosenLevel(keyOf(l))].e+' '+LEVELS_DEF[chosenLevel(keyOf(l))].n+'</span></div>'
+      +'<div class="sbot">'+starHTML(bestOf(lvKey(keyOf(l),chosenLevel(keyOf(l)))))+(l.user?'<span class="ren" role="button" tabindex="0">✎ Nazwa</span><span class="del" role="button" tabindex="0">Usuń</span>':'')+'</div>'
       +'<span class="pring" style="--p:'+pc+'"><span>'+pc+'%</span></span><span class="go">Graj</span>';
     drawCover(b.querySelector('canvas'),l.song,keyOf(l),true);
     b.onclick=e=>{ if(e.target.closest('.ren')){ e.stopPropagation(); openRename(l); return; } const d=e.target.closest('.del'); if(d){ e.stopPropagation(); if(d.dataset.sure){ const it=library[i]; library.splice(i,1); saveUserSongs(); renderHome(); cloudDelete(it); } else { d.dataset.sure=1; d.textContent='Na pewno?'; setTimeout(()=>{ if(d.isConnected){ delete d.dataset.sure; d.textContent='Usuń'; } },2500); } return; } openSong(i); };
@@ -1823,7 +1888,8 @@ function renderHome(){
     drawCover(box.querySelector('canvas'),l.song,keyOf(l),true); $('contBtn').onclick=()=>openSong(li); }
 }
 function openSong(i){
-  const l=library[i]; song=l.song; songTitle=l.title; songKey=keyOf(l); LS.set(pkey('kfp_last'),songKey); LS.set(pkey('kfp_lastT'),Date.now()); dirty(60000);
+  const l=library[i]; baseSong=l.song; songTitle=l.title; songKey=keyOf(l); level=chosenLevel(songKey);
+  if(!baseSong.fingered){ assignFingering(baseSong); baseSong.fingered=true; } song=levelSong(baseSong,level); LS.set(pkey('kfp_last'),songKey); LS.set(pkey('kfp_lastT'),Date.now()); dirty(60000);
   $('cRen').classList.toggle('hidden',!l.user);
   $('pTitle').textContent=l.title;
   if(!song.fingered){ assignFingering(song); song.fingered=true; }
@@ -1901,9 +1967,9 @@ const DEV=(()=>{ let d=LS.get('kfp_dev',null); if(!d){ d=Math.random().toString(
 const maxMap=(a,b)=>{ const r={...(a||{})}; for(const k in (b||{})) r[k]=Math.max(r[k]||0,b[k]||0); return r; };
 const stab=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((r,q)=>(r[q]=v[q],r),{}):v);
 function profDoc(id){ return {v:1,best:LS.get('kfp_best_'+id,{}),course:LS.get('kfp_course_'+id,{}),last:LS.get('kfp_last_'+id,null),lastT:LS.get('kfp_lastT_'+id,0),
-  avatar:LS.get('kfp_avatar_'+id,null),avT:LS.get('kfp_avT_'+id,0),stats:LS.get('kfp_stats_'+id,{})}; }
+  avatar:LS.get('kfp_avatar_'+id,null),avT:LS.get('kfp_avT_'+id,0),stats:LS.get('kfp_stats_'+id,{}),lvl:LS.get('kfp_lvl_'+id,{})}; }
 function applyDoc(id,d){ LS.set('kfp_best_'+id,d.best||{}); LS.set('kfp_course_'+id,d.course||{}); if(d.last!=null) LS.set('kfp_last_'+id,d.last); LS.set('kfp_lastT_'+id,d.lastT||0);
-  if(d.avatar) LS.set('kfp_avatar_'+id,d.avatar); LS.set('kfp_avT_'+id,d.avT||0); LS.set('kfp_stats_'+id,d.stats||{}); }
+  if(d.avatar) LS.set('kfp_avatar_'+id,d.avatar); LS.set('kfp_avT_'+id,d.avT||0); LS.set('kfp_stats_'+id,d.stats||{}); LS.set('kfp_lvl_'+id,d.lvl||{}); }
 function mergeStats(a,b){ a=a||{}; b=b||{}; const r={d:{},login:[...new Set([...(a.login||[]),...(b.login||[])])].sort()};
   const A=a.d||{}, B=b.d||{};
   for(const day of new Set([...Object.keys(A),...Object.keys(B)])){ const x=A[day]||{}, y=B[day]||{}, o={};
@@ -1913,7 +1979,7 @@ function mergeStats(a,b){ a=a||{}; b=b||{}; const r={d:{},login:[...new Set([...
 function mergeDoc(a,b){ const course={...(a.course||{})}; for(const s in (b.course||{})) course[s]=maxMap(course[s],b.course[s]);
   const av= !a.avatar? b : !b.avatar? a : (a.avT||0)>(b.avT||0)? a : b;      // przy remisie wygrywa chmura
   return {v:1,best:maxMap(a.best,b.best),course,last:(b.lastT||0)>(a.lastT||0)?b.last:a.last,lastT:Math.max(a.lastT||0,b.lastT||0),
-    avatar:av.avatar||null,avT:av.avT||0,stats:mergeStats(a.stats,b.stats)}; }
+    avatar:av.avatar||null,avT:av.avT||0,stats:mergeStats(a.stats,b.stats),lvl:{...(b.lvl||{}),...(a.lvl||{})}}; }
 const profBusy={};
 function syncProfile(id){ if(!ghToken()) return Promise.resolve(); const run=()=>syncProfileNow(id).catch(e=>{ console.warn('Profil',id,e); });
   return profBusy[id]=(profBusy[id]||Promise.resolve()).then(run); }
