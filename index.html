@@ -757,8 +757,8 @@ function frame(now){
     else if(mode==='wait'&&evIdx>=events.length) songTime=Math.min(nt,endT);
     if(mode!=='wait'&&songTime>=endT+0.3) finish();
   }
-  draw(now);
-  requestAnimationFrame(frame);
+  requestAnimationFrame(frame);   // najpierw kolejna klatka, żeby błąd rysowania nigdy nie zatrzymał aplikacji
+  try{ draw(now); }catch(e){ console.error(e); }
 }
 
 /* ===================== RYSOWANIE ===================== */
@@ -838,7 +838,7 @@ function draw(now){
     drawHands(fingerNow); }
   // błyski
   for(let i=flashes.length-1;i>=0;i--){ const f=flashes[i], a=1-(now-f.t)/450; if(a<=0){flashes.splice(i,1); continue;} if(g.x[f.m]===undefined) continue;
-    ctx.globalAlpha=a*0.9; ctx.strokeStyle=HC[f.h].a; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(g.x[f.m]+g.w[f.m]/2,hitY,8+(1-a)*26,0,7); ctx.stroke(); ctx.globalAlpha=1; }
+    ctx.globalAlpha=a*0.9; ctx.strokeStyle=HC[f.h].a; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(g.x[f.m]+g.w[f.m]/2,kbTop,8+(1-a)*26,0,7); ctx.stroke(); ctx.globalAlpha=1; }
   // odliczanie
   if(countIn&&playing){ const bl=song.beats[1]-song.beats[0]||0.6; const left=Math.ceil((startT-songTime)/bl); if(left>0){ const cx=W/2, cy=Math.min(H*0.38,kbTop*0.55);
       ctx.fillStyle='rgba(255,200,69,.14)'; ctx.beginPath(); ctx.arc(cx,cy,56,0,7); ctx.fill(); ctx.fillStyle='#FFC845'; ctx.font='600 68px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(left,cx,cy+3); ctx.textBaseline='alphabetic'; ctx.textAlign='left'; } }
@@ -1028,7 +1028,7 @@ function micAnalyse(now){
   let mean=0,cnt=0; for(let i=Math.floor(60/binHz);i<Math.floor(4000/binHz);i+=3){ mean+=Math.pow(10,spec[i]/20); cnt++; } mean/=cnt||1;
   const sal=m=>{ const f=440*Math.pow(2,(m-69)/12); let v=0; const w=[1,.8,.6,.45,.35]; for(let k=1;k<=5;k++){ const b=f*k/binHz; if(b>=N-2) break; v+=w[k-1]*mag(b);} return v; };
   const thr=(11-(+$('sens').value))*1.4+2.5;
-  const detected=m=>{ const v=sal(m); return v>thr*mean*3.2 && v>1.25*Math.max(sal(m-1),sal(m+1)); };
+  const detected=m=>{ const v=sal(m), low=m<55; return v>thr*mean*(low?2.3:3.2) && v>(low?1.04:1.25)*Math.max(sal(m-1),sal(m+1)); };  // niskie dźwięki: sąsiednie półtony leżą bardzo blisko, więc łagodniejszy próg
   // co słychać (do podglądu)
   let bm=null,bv=0; for(let m=36;m<=96;m++){ const v=sal(m); if(v>bv){bv=v;bm=m;} }
   if(bm&&detected(bm)) heardMic={m:bm,t:now};
