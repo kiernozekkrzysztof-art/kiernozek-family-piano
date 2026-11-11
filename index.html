@@ -108,6 +108,9 @@ input[type=file]{display:none}
 .prof .av{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font-size:44px}
 .prof b{font-family:var(--disp);font-weight:600;font-size:20px}
 .prof small{color:var(--ink2);font-size:13px;font-weight:600}
+.prof{position:relative}
+.prof .av,.avbtn .av{background-size:cover;background-position:center}
+.photo{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:50%;background:#F1F1FB;display:grid;place-items:center;font-size:16px;box-shadow:0 2px 0 #DCDDF0}
 .avbtn{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:4px 14px 4px 4px;box-shadow:0 2px 0 #DCDDF0;font-family:var(--disp);font-weight:600;font-size:15px}
 .avbtn .av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:19px}
 .toprt{display:flex;gap:10px;align-items:center}
@@ -222,6 +225,7 @@ input[type=range]{accent-color:var(--azure);width:150px}
   <h1>Kto dziś gra?</h1>
   <p>Każdy ma swoje postępy i gwiazdki.</p>
   <div class="plist" id="plist"></div>
+  <input id="photoIn" type="file" accept="image/*">
 </section>
 
 <!-- ================= EKRAN GŁÓWNY ================= -->
@@ -1529,12 +1533,23 @@ const pkey=k=>k+'_'+(profile?profile.id:'krzysztof');      // każdy gracz ma os
 function renderProfiles(){ const box=$('plist'); box.innerHTML='';
   PROFILES.forEach(p=>{ const b=document.createElement('button'); b.className='prof';
     const n=Object.keys(LS.get('kfp_course_'+p.id,{})).length;
-    b.innerHTML='<span class="av" style="background:'+p.bg+'">'+p.em+'</span><b>'+p.name+'</b><small>'+(n?'Ćwiczone utwory: '+n:'Zaczynamy!')+'</small>';
-    b.onclick=()=>pickProfile(p.id); box.appendChild(b); }); }
+    b.innerHTML='<span class="av"></span><b>'+p.name+'</b><small>'+(n?'Ćwiczone utwory: '+n:'Zaczynamy!')+'</small><span class="photo" role="button" aria-label="Zmień zdjęcie">📷</span>';
+    paintAv(b.querySelector('.av'),p);
+    b.onclick=e=>{ if(e.target.closest('.photo')){ e.stopPropagation(); photoFor=p.id; $('photoIn').click(); return; } pickProfile(p.id); }; box.appendChild(b); }); }
+// Zdjęcie gracza: zostaje tylko na tym urządzeniu (nie trafia do internetu)
+let photoFor=null;
+function paintAv(el,p){ const ph=LS.get('kfp_avatar_'+p.id,null); if(ph){ el.textContent=''; el.style.backgroundImage='url('+ph+')'; el.style.backgroundColor=p.bg; } else { el.style.backgroundImage=''; el.style.backgroundColor=p.bg; el.textContent=p.em; } }
+$('photoIn').onchange=async e=>{ const f=e.target.files[0]; e.target.value=''; if(!f||!photoFor) return;
+  try{ const img=await createImageBitmap(f); const S=192, c=document.createElement('canvas'); c.width=c.height=S; const k=Math.min(img.width,img.height);
+    const y0=img.height>img.width*1.15?(img.height-k)*0.08:Math.max(0,(img.height-k)/2-k*0.08);   // na wysokim zdjęciu twarz jest u góry
+    const cx=c.getContext('2d'); cx.fillStyle=(PROFILES.find(q=>q.id===photoFor)||{}).bg||'#fff'; cx.fillRect(0,0,S,S);   // przezroczyste tło → kolor profilu
+    cx.drawImage(img,(img.width-k)/2,y0,k,k,0,0,S,S);
+    LS.set('kfp_avatar_'+photoFor,c.toDataURL('image/jpeg',0.85)); renderProfiles(); if(profile) renderHome(); toast('Zdjęcie zapisane na tym urządzeniu'); }
+  catch(err){ toast('Nie mogę wczytać tego zdjęcia'); } };
 function showProfiles(){ renderProfiles(); $('profiles').classList.remove('hidden'); }
 function pickProfile(id){ profile=PROFILES.find(p=>p.id===id); LS.set('kfp_profile',id); $('profiles').classList.add('hidden'); renderHome();
   if(profile.kid) toast(pick(FUN.hello)); }
-function pick(a){ const s=a[Math.floor(Math.random()*a.length)]; return s.replace(/\{n\}/g,profile?profile.name:''); }
+function pick(a){ if(profile&&profile.id==='lucas'&&FOOT[a.key]&&Math.random()<0.5) a=FOOT[a.key]; const s=a[Math.floor(Math.random()*a.length)]; return s.replace(/\{n\}/g,profile?profile.name:''); }
 // Komentarze i żarty dla dzieci (Lucas, Mia)
 const FUN={
   hello:['Cześć {n}! Palce rozgrzane? 🎹','Hej {n}! Dziś będzie super granie!','{n}, pianino już na Ciebie czeka 😄','Witaj {n}! Gotowy do koncertu? 🎤'],
@@ -1546,6 +1561,18 @@ const FUN={
   joke:['Dlaczego fortepian jest zawsze spokojny? Bo ma dobre nastrojenie! 😄','Dlaczego nuta poszła do szkoły? Żeby nauczyć się taktu! 🎵','Co robi pianista w ogrodzie? Sadzi klucze wiolinowe! 🌱🎼','Dlaczego pianino nigdy się nie gubi? Bo zawsze zna swoje klawisze! 🎹','Jak się nazywa ulubiony owoc muzyka? Fis-taszki! 🥜','Co mówi pauza do nuty? Odpocznij sobie! 😴','Dlaczego pianista nosi okulary? Żeby lepiej widzieć Do-brze! 👓','Jaką muzykę lubią baloniki? Pop! 🎈','Co mówi metronom na dzień dobry? Tik-tak, wstawaj, gramy! ⏰','Dlaczego krowa nie gra na pianinie? Bo woli muuuzykę klasyczną! 🐄'],
   part:['Część zaliczona! {n}, jesteś jak rakieta 🚀','Kolejny kawałek w Twojej kolekcji, {n}! 🧩','{n}, ta część już jest Twoja! 🏆'],
   song:['{n}, CAŁY UTWÓR OPANOWANY! Czas na koncert dla rodziny! 🎉🎹','Mistrz! {n} zna cały utwór! Zagraj go komuś! 🏆']
+};
+for(const k in FUN) FUN[k].key=k;
+// Lucas lubi piłkę nożną ⚽
+const FOOT={
+  start:['{n}, wychodzisz na boisko! Gwizdek i gramy! ⚽','Rozgrzewka zaliczona, {n}. Czas strzelać nuty! 🥅'],
+  streak:['GOOOL! {n} strzela nutę za nutą! ⚽🔥','{n}, to jest hat-trick na klawiszach! 🎩⚽','Kibice na trybunach wstają, {n}! 🙌'],
+  great:['{n}, takie granie to jak gol w finale Mistrzostw! 🏆⚽','Brawo {n}! Numer 20 znowu strzela! ⚽','{n}, trener daje Ci dziś opaskę kapitana! 🧢'],
+  good:['Dobry mecz, {n}! Jeszcze trochę treningu i będzie puchar 🏆','{n}, prawie gol! Następny strzał wpadnie ⚽'],
+  low:['{n}, nawet najlepsi piłkarze czasem trafiają w słupek. Jeszcze raz! ⚽','Spokojnie, {n}. To tylko trening, mecz wygramy! 💪'],
+  joke:['Dlaczego piłkarz zabrał pianino na mecz? Bo chciał zagrać na skrzydle! 🎹⚽','Co mówi bramkarz do pianisty? Ty też łapiesz każdą nutę? 🧤','Dlaczego piłka lubi muzykę? Bo zawsze jest w rytmie odbicia! ⚽🎵'],
+  part:['Część zaliczona! {n}, to jak wygrana połowa meczu! ⚽'],
+  song:['{n} wygrywa cały mecz! UTWÓR OPANOWANY! 🏆⚽🎹']
 };
 function funLine(stars,lastOfPart,lastOfSong){ if(!profile||!profile.kid) return '';
   const head=lastOfSong&&stars>=1?pick(FUN.song):lastOfPart&&stars>=1?pick(FUN.part):stars>=3?pick(FUN.great):stars>=1?pick(FUN.good):pick(FUN.low);
@@ -1575,7 +1602,7 @@ function drawCover(c,s,title){
 function starHTML(p){ const k=starsOf(p); return '<span class="stars" aria-label="'+k+' z 3 gwiazdek">'+'★'.repeat(k)+'<i>'+'★'.repeat(3-k)+'</i></span>'; }
 function esc(t){ return t.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function renderHome(){
-  if(profile){ $('profAv').textContent=profile.em; $('profAv').style.background=profile.bg; $('profName').textContent=profile.name; $('helloH').textContent=profile.kid?'Cześć '+profile.name+'! Co gramy?':'Co dziś gramy, '+profile.name+'?'; }
+  if(profile){ paintAv($('profAv'),profile); $('profName').textContent=profile.name; $('helloH').textContent=profile.kid?'Cześć '+profile.name+'! Co gramy?':'Co dziś gramy, '+profile.name+'?'; }
   const grid=$('grid'); grid.innerHTML='';
   library.forEach((l,i)=>{
     const b=document.createElement('button'); b.className='song';
